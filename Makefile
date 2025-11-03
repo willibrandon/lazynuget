@@ -16,12 +16,12 @@ help:
 ## build-dev: Quick development build without optimizations
 build-dev:
 	@echo "Building $(BINARY_NAME) (dev)..."
-	go build -o $(BINARY_NAME) cmd/lazynuget/main.go
+	go build -o $(BINARY_NAME) ./cmd/lazynuget
 
 ## build: Production build with optimizations and version injection
 build:
 	@echo "Building $(BINARY_NAME) v$(VERSION) ($(COMMIT))..."
-	go build $(LDFLAGS) -trimpath -o $(BINARY_NAME) cmd/lazynuget/main.go
+	go build $(LDFLAGS) -trimpath -o $(BINARY_NAME) ./cmd/lazynuget
 
 ## test: Run unit tests with race detector
 test:
@@ -98,7 +98,7 @@ lint-fix:
 ## install: Install binary to GOPATH/bin
 install:
 	@echo "Installing $(BINARY_NAME)..."
-	go install $(LDFLAGS) -trimpath cmd/lazynuget/main.go
+	go install $(LDFLAGS) -trimpath ./cmd/lazynuget
 
 ## run: Build and run the application
 run: build-dev

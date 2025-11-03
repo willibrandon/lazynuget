@@ -29,6 +29,10 @@ func (m *mockLogger) Error(format string, args ...any) {
 	m.logs = append(m.logs, fmt.Sprintf("ERROR: "+format, args...))
 }
 
+func (m *mockLogger) Close() error {
+	return nil
+}
+
 func TestStateTransitions(t *testing.T) {
 	tests := []struct {
 		name        string

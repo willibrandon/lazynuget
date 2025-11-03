@@ -31,6 +31,17 @@ func main() {
 		}
 	}()
 
+	// Check for subcommands first (before app initialization)
+	// This allows utility commands to run without full bootstrap
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "encrypt-value":
+			// Run encrypt-value subcommand
+			exitCode := runEncryptValue(os.Args[2:])
+			os.Exit(exitCode)
+		}
+	}
+
 	// Create application instance
 	app, err := bootstrap.NewApp(version, commit, date)
 	if err != nil {

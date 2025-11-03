@@ -1,0 +1,72 @@
+# Sample TOML configuration file covering all setting categories
+# This file demonstrates valid configuration for LazyNuGet
+# Values match valid.yml for consistency in testing
+
+# IMPORTANT: In TOML, all top-level keys must come BEFORE any [section] headers
+# Once you define a [section], all subsequent keys are part of that section
+
+version = "1.0"
+
+# UI Settings
+theme = "dark"
+compact_mode = true
+show_hints = false
+show_line_numbers = true
+date_format = "2006-01-02 15:04:05"
+keybinding_profile = "vim"
+
+# Performance
+max_concurrent_ops = 8
+cache_size = 100
+refresh_interval = "30s"
+
+# Dotnet CLI Integration
+dotnet_path = "/usr/local/bin/dotnet"
+dotnet_verbosity = "detailed"
+
+# Logging
+log_level = "debug"
+log_dir = "/tmp/lazynuget/logs"
+log_format = "json"
+
+# Hot-Reload
+hot_reload = true
+
+# Color Scheme (nested table)
+[color_scheme]
+border = "#444444"
+border_focus = "#00AAFF"
+text = "#EEEEEE"
+text_dim = "#888888"
+background = "#1E1E1E"
+highlight = "#FFAA00"
+error = "#FF4444"
+warning = "#FFAA00"
+success = "#44FF44"
+info = "#4444FF"
+
+# Keybindings (map of keybinding objects)
+[keybindings.quit]
+action = "quit"
+key = "q"
+description = "Quit application"
+context = "global"
+
+[keybindings.refresh]
+action = "refresh"
+key = "r"
+description = "Refresh package list"
+context = "main"
+
+# Timeouts (nested table)
+[timeouts]
+network_request = "60s"
+dotnet_cli = "120s"
+file_operation = "10s"
+
+# Log Rotation (nested table)
+[log_rotation]
+max_size = 20
+max_age = 60
+max_backups = 5
+compress = false

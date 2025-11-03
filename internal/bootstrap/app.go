@@ -16,18 +16,22 @@ import (
 
 // App represents the running LazyNuGet application instance.
 type App struct {
-	startTime time.Time
-	logger    logging.Logger
-	platform  platform.Platform
-	gui       any
-	ctx       context.Context
-	config    *config.AppConfig
-	lifecycle *lifecycle.Manager
-	cancel    context.CancelFunc
-	version   VersionInfo
-	phase     string
-	runMode   platform.RunMode
-	guiOnce   sync.Once
+	startTime    time.Time
+	configLoader config.ConfigLoader
+	platform     platform.Platform
+	gui          any
+	ctx          context.Context
+	watcher      config.ConfigWatcher
+	logger       logging.Logger
+	config       *config.Config
+	cancel       context.CancelFunc
+	lifecycle    *lifecycle.Manager
+	version      VersionInfo
+	configPath   string
+	phase        string
+	runMode      platform.RunMode
+	configMu     sync.RWMutex
+	guiOnce      sync.Once
 }
 
 // NewApp creates a new application instance with version information.
@@ -77,19 +81,25 @@ func (app *App) Bootstrap(flags *Flags) error {
 	// Phase: Config loading
 	app.phase = "config"
 
-	// Convert bootstrap.Flags to config.Flags
-	var configFlags *config.Flags
+	// Create config loader
+	loader := config.NewLoader()
+
+	// Prepare load options from flags
+	loadOpts := config.LoadOptions{
+		EnvVarPrefix: "LAZYNUGET_",
+		StrictMode:   false,
+		Logger:       nil, // Will set up logger after config is loaded
+	}
+
 	if flags != nil {
-		configFlags = &config.Flags{
-			ShowVersion:    flags.ShowVersion,
-			ShowHelp:       flags.ShowHelp,
-			ConfigPath:     flags.ConfigPath,
+		loadOpts.ConfigFilePath = flags.ConfigPath
+		loadOpts.CLIFlags = config.CLIFlags{
 			LogLevel:       flags.LogLevel,
 			NonInteractive: flags.NonInteractive,
 		}
 	}
 
-	cfg, err := config.Load(configFlags)
+	cfg, err := loader.Load(app.ctx, loadOpts)
 	if err != nil {
 		if setErr := app.lifecycle.SetState(lifecycle.StateFailed); setErr != nil {
 			return fmt.Errorf("configuration loading failed: %w (state transition error: %w)", err, setErr)
@@ -97,6 +107,8 @@ func (app *App) Bootstrap(flags *Flags) error {
 		return fmt.Errorf("configuration loading failed: %w", err)
 	}
 	app.config = cfg
+	app.configLoader = loader
+	app.configPath = loadOpts.ConfigFilePath
 
 	// Phase: Logging setup
 	app.phase = "logging"
@@ -113,7 +125,11 @@ func (app *App) Bootstrap(flags *Flags) error {
 
 	// Phase: Determine run mode (interactive vs non-interactive)
 	app.phase = "runmode"
-	app.runMode = platform.DetermineRunMode(app.config.NonInteractive)
+	nonInteractive := false
+	if flags != nil {
+		nonInteractive = flags.NonInteractive
+	}
+	app.runMode = platform.DetermineRunMode(nonInteractive)
 	app.logger.Info("Run mode determined: %s", app.runMode)
 
 	// Phase: Dotnet CLI validation (async, non-blocking)
@@ -128,6 +144,74 @@ func (app *App) Bootstrap(flags *Flags) error {
 		}
 	}()
 
+	// Phase: Hot-reload watcher setup (if enabled)
+	app.phase = "hot-reload"
+	if app.config.HotReload && app.configPath != "" {
+		app.logger.Info("Hot-reload enabled, starting config file watcher")
+
+		watcher, err := config.NewConfigWatcher(config.WatchOptions{
+			ConfigFilePath: app.configPath,
+			LoadOptions:    loadOpts,
+			OnReload: func(newCfg *config.Config) {
+				app.configMu.Lock()
+				app.config = newCfg
+				app.configMu.Unlock()
+				app.logger.Info("Configuration reloaded successfully")
+			},
+			OnError: func(err error) {
+				app.logger.Error("Configuration reload failed: %v", err)
+			},
+			OnFileDeleted: func() {
+				app.logger.Warn("Configuration file deleted, using previous configuration")
+			},
+		}, loader)
+
+		if err != nil {
+			app.logger.Warn("Failed to start config file watcher: %v", err)
+		} else {
+			app.watcher = watcher
+
+			// Start watching in background
+			eventCh, errCh, err := watcher.Watch(app.ctx)
+			if err != nil {
+				app.logger.Warn("Failed to start watching config file: %v", err)
+			} else {
+				// Consume events in background goroutine
+				go func() {
+					for {
+						select {
+						case <-app.ctx.Done():
+							return
+						case event := <-eventCh:
+							app.logger.Debug("Config change event: type=%s, error=%v", event.Type, event.Error)
+						case err := <-errCh:
+							app.logger.Error("Config watcher error: %v", err)
+						}
+					}
+				}()
+
+				// Register shutdown handler to stop watcher
+				app.RegisterShutdownHandler("config-watcher", 100, func(_ context.Context) error {
+					if app.watcher != nil {
+						app.logger.Debug("Stopping config file watcher")
+						return app.watcher.Stop()
+					}
+					return nil
+				})
+
+				app.logger.Debug("Config file watcher started successfully")
+			}
+		}
+	} else if app.config.HotReload && app.configPath == "" {
+		app.logger.Debug("Hot-reload enabled but no config file path available (using defaults)")
+	}
+
+	// Register logger cleanup handler (runs last, after all other shutdown handlers)
+	app.RegisterShutdownHandler("logger", 999, func(_ context.Context) error {
+		app.logger.Debug("Closing logger")
+		return app.logger.Close()
+	})
+
 	// Transition to running state
 	app.phase = "ready"
 	if err := app.lifecycle.SetState(lifecycle.StateRunning); err != nil {
@@ -139,7 +223,10 @@ func (app *App) Bootstrap(flags *Flags) error {
 }
 
 // GetConfig returns the application configuration.
-func (app *App) GetConfig() *config.AppConfig {
+// Thread-safe: uses RLock to allow concurrent reads while hot-reload updates happen.
+func (app *App) GetConfig() *config.Config {
+	app.configMu.RLock()
+	defer app.configMu.RUnlock()
 	return app.config
 }
 
@@ -244,9 +331,7 @@ func (app *App) checkDirectoryPermissions() {
 		name string
 		path string
 	}{
-		{"config", app.config.ConfigDir},
 		{"log", app.config.LogDir},
-		{"cache", app.config.CacheDir},
 	}
 
 	for _, dir := range directories {
@@ -299,12 +384,8 @@ func (app *App) useTempDirectoryFallback(dirType string) {
 
 	// Update config with fallback path
 	switch dirType {
-	case "config":
-		app.config.ConfigDir = fallbackPath
 	case "log":
 		app.config.LogDir = fallbackPath
-	case "cache":
-		app.config.CacheDir = fallbackPath
 	}
 
 	app.logger.Info("Using fallback %s directory: %s", dirType, fallbackPath)

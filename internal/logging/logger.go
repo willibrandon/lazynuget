@@ -23,11 +23,15 @@ type Logger interface {
 
 	// Error logs an error message
 	Error(format string, args ...any)
+
+	// Close closes the logger and releases resources
+	Close() error
 }
 
 // slogLogger wraps slog.Logger to implement our Logger interface
 type slogLogger struct {
-	logger *slog.Logger
+	logger  *slog.Logger
+	logFile *os.File // nil if logging to stdout only
 }
 
 func (l *slogLogger) Debug(format string, args ...any) {
@@ -44,6 +48,13 @@ func (l *slogLogger) Warn(format string, args ...any) {
 
 func (l *slogLogger) Error(format string, args ...any) {
 	l.logger.Error(fmt.Sprintf(format, args...))
+}
+
+func (l *slogLogger) Close() error {
+	if l.logFile != nil {
+		return l.logFile.Close()
+	}
+	return nil
 }
 
 // New creates a new logger instance with the specified level and output path.
@@ -72,6 +83,7 @@ func New(level, logPath string) Logger {
 
 	// Determine output writer
 	var writer io.Writer = os.Stdout
+	var logFile *os.File
 
 	// If log path is specified, create multiwriter for both stdout and file
 	if logPath != "" {
@@ -91,6 +103,7 @@ func New(level, logPath string) Logger {
 			} else {
 				// Write to both stdout and file
 				writer = io.MultiWriter(os.Stdout, file)
+				logFile = file // Store file handle for later closing
 			}
 		}
 	}
@@ -100,6 +113,7 @@ func New(level, logPath string) Logger {
 
 	// Create and return logger
 	return &slogLogger{
-		logger: slog.New(handler),
+		logger:  slog.New(handler),
+		logFile: logFile,
 	}
 }

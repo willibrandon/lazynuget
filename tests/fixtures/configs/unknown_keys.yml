@@ -1,0 +1,14 @@
+# Config file with unknown/unsupported keys
+# These should be ignored with warnings
+
+theme: dark
+logLevel: info
+
+# Unknown keys - should be ignored
+unknownSetting: value
+anotherBadKey: 123
+nested:
+  unsupportedField: true
+
+# Valid settings should still work
+maxConcurrentOps: 6

@@ -1,0 +1,3 @@
+# This file exists alongside config.yml
+# Having both formats should trigger an error per FR-005
+theme = "light"

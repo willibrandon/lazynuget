@@ -41,13 +41,14 @@ compactMode true  # missing colon
 	}
 
 	// Verify error message is helpful
+	// Updated for Phase 4: error message now says "YAML parsing error"
 	expectedPhrases := []string{
-		"failed to parse YAML",
+		"YAML parsing error",
 		"syntax errors",
 	}
 
 	for _, phrase := range expectedPhrases {
-		if !strings.Contains(strings.ToLower(outputStr), strings.ToLower(phrase)) {
+		if !strings.Contains(outputStr, phrase) {
 			t.Errorf("Expected error message to contain '%s', got: %s", phrase, outputStr)
 		}
 	}
@@ -112,14 +113,14 @@ func TestMissingDotnetCLI(t *testing.T) {
 }
 
 func TestConfigValidationError(t *testing.T) {
-	// Create a temporary directory for config
+	// Per Phase 4 (FR-012, FR-013): Semantic validation errors are non-blocking
+	// Invalid values fall back to defaults with warnings, app continues to run
 	tmpDir := t.TempDir()
 
-	// Write config with invalid values
+	// Write config with invalid values (semantic errors, not syntax errors)
 	invalidConfig := `
-logLevel: invalid_level
-startupTimeout: 100s  # Too high (max 30s)
-maxConcurrentOps: 100 # Too high (max 16)
+logLevel: invalid_level      # Invalid enum - falls back to default
+maxConcurrentOps: 100        # Out of range (max 16) - falls back to default
 `
 	configPath := filepath.Join(tmpDir, "config.yml")
 	if err := os.WriteFile(configPath, []byte(invalidConfig), 0o644); err != nil {
@@ -136,20 +137,22 @@ maxConcurrentOps: 100 # Too high (max 16)
 
 	outputStr := string(output)
 
-	// Should exit with error
-	if err == nil {
-		t.Fatalf("Expected error for invalid config values but got none. Output: %s", outputStr)
+	// Per FR-012: App should START successfully (non-blocking semantic errors)
+	// Exit code 0 is success - app ran and shut down cleanly
+	if err != nil && cmd.ProcessState.ExitCode() > 1 {
+		t.Fatalf("App failed to start with semantic validation errors. Exit code: %d, Output: %s",
+			cmd.ProcessState.ExitCode(), outputStr)
 	}
 
-	// Verify error message mentions validation failure
-	if !strings.Contains(strings.ToLower(outputStr), "invalid") &&
-		!strings.Contains(strings.ToLower(outputStr), "validation") {
-		t.Errorf("Expected validation error message, got: %s", outputStr)
+	// Verify validation warnings were logged (per FR-013)
+	// Should contain warnings about invalid values and mention defaults being used
+	if !strings.Contains(outputStr, "WARN") && !strings.Contains(outputStr, "warn") {
+		t.Errorf("Expected warning logs for invalid config values, got: %s", outputStr)
 	}
 
-	// Verify exit code indicates user error
-	if cmd.ProcessState.ExitCode() != 1 {
-		t.Errorf("Expected exit code 1 for validation error, got: %d", cmd.ProcessState.ExitCode())
+	// Verify app bootstrapped and started (not blocked by semantic errors)
+	if !strings.Contains(outputStr, "Bootstrap complete") {
+		t.Errorf("Expected app to complete bootstrap despite invalid config values, got: %s", outputStr)
 	}
 }
 

@@ -1,0 +1,5 @@
+# Intentionally invalid YAML with syntax error
+theme: dark
+logLevel: info
+  indentationError: this line is incorrectly indented
+maxConcurrentOps: 4
