@@ -28,11 +28,11 @@ LazyNuGet uses single project structure with Go conventions:
 
 **Purpose**: Project initialization and basic Go structure
 
-- [ ] T001 Initialize Go module with `go mod init github.com/yourusername/lazynuget` in repository root
-- [ ] T002 Create directory structure: `cmd/lazynuget/`, `internal/bootstrap/`, `internal/config/`, `internal/logging/`, `internal/platform/`, `tests/integration/`, `tests/fixtures/configs/`
-- [ ] T003 [P] Create `.gitignore` with Go patterns (binaries, vendor/, coverage files)
-- [ ] T004 [P] Create `Makefile` with build targets (build, build-dev, test, test-int, clean) per quickstart.md
-- [ ] T005 [P] Create `go.work` file if using Go workspaces (optional)
+- [X] T001 Initialize Go module with `go mod init github.com/yourusername/lazynuget` in repository root
+- [X] T002 Create directory structure: `cmd/lazynuget/`, `internal/bootstrap/`, `internal/config/`, `internal/logging/`, `internal/platform/`, `tests/integration/`, `tests/fixtures/configs/`
+- [X] T003 [P] Create `.gitignore` with Go patterns (binaries, vendor/, coverage files)
+- [X] T004 [P] Create `Makefile` with build targets (build, build-dev, test, test-int, clean) per quickstart.md
+- [X] T005 [P] Create `go.work` file if using Go workspaces (optional)
 
 ---
 
@@ -42,10 +42,10 @@ LazyNuGet uses single project structure with Go conventions:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create minimal `internal/config/config.go` stub with `AppConfig` struct and `Load()` function returning defaults
-- [ ] T007 [P] Create minimal `internal/logging/logger.go` stub with `Logger` interface and `New()` function returning no-op logger
-- [ ] T008 [P] Create minimal `internal/platform/detect.go` stub with `Platform` interface and `New()` function returning platform info
-- [ ] T009 Create `internal/bootstrap/types.go` with `VersionInfo` struct (version, commit, date fields)
+- [X] T006 Create minimal `internal/config/config.go` stub with `AppConfig` struct and `Load()` function returning defaults
+- [X] T007 [P] Create minimal `internal/logging/logger.go` stub with `Logger` interface and `New()` function returning no-op logger
+- [X] T008 [P] Create minimal `internal/platform/detect.go` stub with `Platform` interface and `New()` function returning platform info
+- [X] T009 Create `internal/bootstrap/types.go` with `VersionInfo` struct (version, commit, date fields)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -59,21 +59,21 @@ LazyNuGet uses single project structure with Go conventions:
 
 ### Implementation for User Story 1
 
-- [ ] T010 [P] [US1] Create `internal/bootstrap/flags.go` with CLI flag definitions (--version, --help, --config, --log-level, --non-interactive) using Go flag package
-- [ ] T011 [P] [US1] Create `internal/bootstrap/version.go` with `ShowVersion()` function that formats and prints VersionInfo
-- [ ] T012 [US1] Create `internal/bootstrap/app.go` with `App` struct (config, logger, platform, lifecycle, gui, ctx, cancel, version, startTime fields) and `NewApp(version, commit, date string) (*App, error)` constructor
-- [ ] T013 [US1] Implement `App.ParseFlags()` method in `internal/bootstrap/flags.go` that parses CLI args and returns early for --version/--help
-- [ ] T014 [US1] Implement `App.Bootstrap()` method in `internal/bootstrap/app.go` that initializes config, logger, platform in order (with phase tracking for error context)
-- [ ] T015 [US1] Create `cmd/lazynuget/main.go` with main() function: call NewApp(), ParseFlags(), Bootstrap(), handle --version/--help, exit with appropriate codes
-- [ ] T016 [US1] Add Layer 1 panic recovery in `cmd/lazynuget/main.go` main() function (defer/recover with exit code 2)
-- [ ] T017 [US1] Add Layer 2 panic recovery in `App.Bootstrap()` method (defer/recover with phase logging, re-panic)
-- [ ] T018 [US1] Add help text generation in `internal/bootstrap/flags.go` that documents all flags with descriptions
+- [X] T010 [P] [US1] Create `internal/bootstrap/flags.go` with CLI flag definitions (--version, --help, --config, --log-level, --non-interactive) using Go flag package
+- [X] T011 [P] [US1] Create `internal/bootstrap/version.go` with `ShowVersion()` function that formats and prints VersionInfo
+- [X] T012 [US1] Create `internal/bootstrap/app.go` with `App` struct (config, logger, platform, lifecycle, gui, ctx, cancel, version, startTime fields) and `NewApp(version, commit, date string) (*App, error)` constructor
+- [X] T013 [US1] Implement `App.ParseFlags()` method in `internal/bootstrap/flags.go` that parses CLI args and returns early for --version/--help
+- [X] T014 [US1] Implement `App.Bootstrap()` method in `internal/bootstrap/app.go` that initializes config, logger, platform in order (with phase tracking for error context)
+- [X] T015 [US1] Create `cmd/lazynuget/main.go` with main() function: call NewApp(), ParseFlags(), Bootstrap(), handle --version/--help, exit with appropriate codes
+- [X] T016 [US1] Add Layer 1 panic recovery in `cmd/lazynuget/main.go` main() function (defer/recover with exit code 2)
+- [X] T017 [US1] Add Layer 2 panic recovery in `App.Bootstrap()` method (defer/recover with phase logging, re-panic)
+- [X] T018 [US1] Add help text generation in `internal/bootstrap/flags.go` that documents all flags with descriptions
 
 ### Integration Tests for User Story 1
 
-- [ ] T019 [P] [US1] Create `tests/integration/version_test.go` with TestVersionFlag that runs `./lazynuget --version` and validates output format
-- [ ] T020 [P] [US1] Create `tests/integration/help_test.go` with TestHelpFlag that runs `./lazynuget --help` and validates all flags are documented
-- [ ] T021 [P] [US1] Create `tests/integration/startup_test.go` with TestBasicStartup that validates app initializes without errors (stub, will be enhanced in US4)
+- [X] T019 [P] [US1] Create `tests/integration/version_test.go` with TestVersionFlag that runs `./lazynuget --version` and validates output format
+- [X] T020 [P] [US1] Create `tests/integration/help_test.go` with TestHelpFlag that runs `./lazynuget --help` and validates all flags are documented
+- [X] T021 [P] [US1] Create `tests/integration/startup_test.go` with TestBasicStartup that validates app initializes without errors (stub, will be enhanced in US4)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - `lazynuget --version` and `lazynuget --help` work correctly
 

@@ -3,3 +3,39 @@
 
 # Claude AI
 .claude/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+coverage.out
+coverage.html
+
+# Build artifacts
+/lazynuget
+/bin/
+/dist/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
