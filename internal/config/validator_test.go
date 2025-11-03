@@ -20,11 +20,11 @@ func TestValidatorValidateConfig(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
 		cfg           *Config
+		name          string
+		checkErrors   []string
 		wantErrCount  int
 		wantWarnCount int
-		checkErrors   []string // Expected error keys
 	}{
 		{
 			name:          "valid default config",
@@ -167,9 +167,9 @@ func TestValidatorFallbackDefaults(t *testing.T) {
 	defaults := GetDefaultConfig()
 
 	tests := []struct {
-		name      string
 		cfg       *Config
 		checkFunc func(*Config) error
+		name      string
 	}{
 		{
 			name: "invalid maxConcurrentOps falls back",
@@ -212,7 +212,7 @@ func TestValidatorFallbackDefaults(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			_ = v.validate(tt.cfg)
 			if tt.checkFunc != nil {
 				_ = tt.checkFunc(tt.cfg)

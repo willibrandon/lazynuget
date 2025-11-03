@@ -50,8 +50,8 @@ func TestConfigLoaderValidate(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name          string
 		cfg           *Config
+		name          string
 		wantErrCount  int
 		wantWarnCount int
 		nilConfig     bool
@@ -134,11 +134,11 @@ func TestConfigLoaderLoad(t *testing.T) {
 	loader := NewLoader()
 
 	tests := []struct {
-		name        string
 		setupFunc   func() (LoadOptions, func())
 		checkFunc   func(*Config) error
-		wantErr     bool
+		name        string
 		errContains string
+		wantErr     bool
 	}{
 		{
 			name: "load with defaults only",
@@ -225,7 +225,7 @@ logLevel: debug
 theme: dark
 maxConcurrentOps: 8
 `
-				if err := os.WriteFile(configPath, []byte(yamlContent), 0600); err != nil {
+				if err := os.WriteFile(configPath, []byte(yamlContent), 0o600); err != nil {
 					t.Fatalf("Failed to write test config: %v", err)
 				}
 
@@ -259,7 +259,7 @@ log_level = "error"
 theme = "light"
 max_concurrent_ops = 6
 `
-				if err := os.WriteFile(configPath, []byte(tomlContent), 0600); err != nil {
+				if err := os.WriteFile(configPath, []byte(tomlContent), 0o600); err != nil {
 					t.Fatalf("Failed to write test config: %v", err)
 				}
 
@@ -304,7 +304,7 @@ logLevel: debug
   invalid indentation here
 theme: dark
 `
-				if err := os.WriteFile(configPath, []byte(invalidYAML), 0600); err != nil {
+				if err := os.WriteFile(configPath, []byte(invalidYAML), 0o600); err != nil {
 					t.Fatalf("Failed to write test config: %v", err)
 				}
 
@@ -360,7 +360,7 @@ func TestConfigLoaderLoadPrecedence(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config.yml")
 	yamlContent := "logLevel: debug\n"
-	if err := os.WriteFile(configPath, []byte(yamlContent), 0600); err != nil {
+	if err := os.WriteFile(configPath, []byte(yamlContent), 0o600); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -439,7 +439,7 @@ logLevel: invalid_level
 theme: invalid_theme
 maxConcurrentOps: 999
 `
-	if err := os.WriteFile(configPath, []byte(yamlContent), 0600); err != nil {
+	if err := os.WriteFile(configPath, []byte(yamlContent), 0o600); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 

@@ -119,9 +119,9 @@ func TestValidateFileSize(t *testing.T) {
 			}
 
 			if tt.size > 0 {
-				if err := f.Truncate(tt.size); err != nil {
+				if truncateErr := f.Truncate(tt.size); truncateErr != nil {
 					f.Close()
-					t.Fatalf("Failed to set file size: %v", err)
+					t.Fatalf("Failed to set file size: %v", truncateErr)
 				}
 			}
 			f.Close()
@@ -143,9 +143,9 @@ func TestValidateFileSize(t *testing.T) {
 func TestCheckMultipleFormats(t *testing.T) {
 	tests := []struct {
 		name        string
+		errContains string
 		files       []string
 		wantErr     bool
-		errContains string
 	}{
 		{
 			name:    "no config files",
@@ -192,7 +192,7 @@ func TestCheckMultipleFormats(t *testing.T) {
 			// Create test files
 			for _, filename := range tt.files {
 				path := filepath.Join(tmpDir, filename)
-				if err := os.WriteFile(path, []byte("test content"), 0600); err != nil {
+				if err := os.WriteFile(path, []byte("test content"), 0o600); err != nil {
 					t.Fatalf("Failed to create test file %s: %v", filename, err)
 				}
 			}
@@ -217,10 +217,10 @@ func TestCheckMultipleFormats(t *testing.T) {
 // TestParseConfigFile tests the main config file parsing function
 func TestParseConfigFile(t *testing.T) {
 	tests := []struct {
+		checkFunc func(*Config) error
 		name      string
 		extension string
 		content   string
-		checkFunc func(*Config) error
 		wantErr   bool
 	}{
 		{
@@ -333,7 +333,7 @@ log_level = missing quotes
 			tmpDir := t.TempDir()
 			tmpFile := filepath.Join(tmpDir, "config"+tt.extension)
 
-			if err := os.WriteFile(tmpFile, []byte(tt.content), 0600); err != nil {
+			if err := os.WriteFile(tmpFile, []byte(tt.content), 0o600); err != nil {
 				t.Fatalf("Failed to create test file: %v", err)
 			}
 
@@ -382,7 +382,7 @@ func TestParseConfigFileErrors(t *testing.T) {
 			setupFunc: func() string {
 				tmpDir := t.TempDir()
 				tmpFile := filepath.Join(tmpDir, "config.json")
-				os.WriteFile(tmpFile, []byte(`{"logLevel": "debug"}`), 0600)
+				os.WriteFile(tmpFile, []byte(`{"logLevel": "debug"}`), 0o600)
 				return tmpFile
 			},
 			errContains: "unsupported",
@@ -424,7 +424,7 @@ func TestValidateConfigFilePath(t *testing.T) {
 	// Create a temp file for valid path tests
 	tmpDir := t.TempDir()
 	validFile := filepath.Join(tmpDir, "config.yml")
-	if err := os.WriteFile(validFile, []byte("test"), 0600); err != nil {
+	if err := os.WriteFile(validFile, []byte("test"), 0o600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 

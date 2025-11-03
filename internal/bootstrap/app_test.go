@@ -255,3 +255,38 @@ func TestRegisterShutdownHandler(t *testing.T) {
 		t.Error("shutdown handler was not called")
 	}
 }
+
+func TestGetPlatform(t *testing.T) {
+	app, err := NewApp("test", "test-commit", "2025-01-01")
+	if err != nil {
+		t.Fatalf("NewApp() failed: %v", err)
+	}
+	defer app.cancel()
+
+	if err := app.Bootstrap(nil); err != nil {
+		t.Fatalf("Bootstrap() failed: %v", err)
+	}
+
+	platform := app.GetPlatform()
+	if platform == nil {
+		t.Error("GetPlatform() returned nil")
+	}
+}
+
+func TestGetGUI(t *testing.T) {
+	app, err := NewApp("test", "test-commit", "2025-01-01")
+	if err != nil {
+		t.Fatalf("NewApp() failed: %v", err)
+	}
+	defer app.cancel()
+
+	if err := app.Bootstrap(nil); err != nil {
+		t.Fatalf("Bootstrap() failed: %v", err)
+	}
+
+	// GUI is not implemented yet, should return nil
+	gui := app.GetGUI()
+	if gui != nil {
+		t.Error("GetGUI() should return nil when GUI not implemented")
+	}
+}

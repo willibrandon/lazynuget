@@ -7,10 +7,10 @@ import (
 // TestParseTOML tests TOML parsing with table-driven tests
 func TestParseTOML(t *testing.T) {
 	tests := []struct {
+		checkFunc func(*Config) error
 		name      string
 		toml      string
 		wantErr   bool
-		checkFunc func(*Config) error
 	}{
 		{
 			name: "simple fields",
@@ -130,7 +130,7 @@ border = "#5C6370"
 			name:    "empty TOML",
 			toml:    ``,
 			wantErr: false,
-			checkFunc: func(cfg *Config) error {
+			checkFunc: func(_ *Config) error {
 				// Empty TOML should parse successfully but return zero values
 				return nil
 			},
@@ -218,10 +218,10 @@ border = "#5C6370"
 // TestParseTOMLTypes tests various TOML type conversions
 func TestParseTOMLTypes(t *testing.T) {
 	tests := []struct {
+		want    any
 		name    string
 		toml    string
 		field   string
-		want    interface{}
 		wantErr bool
 	}{
 		{
@@ -284,7 +284,7 @@ func TestParseTOMLTypes(t *testing.T) {
 			}
 
 			// Check specific field
-			var actual interface{}
+			var actual any
 			switch tt.field {
 			case "theme":
 				actual = cfg.Theme
@@ -314,8 +314,8 @@ func TestParseTOMLErrorMessages(t *testing.T) {
 	tests := []struct {
 		name        string
 		toml        string
-		wantErr     bool
 		errContains string
+		wantErr     bool
 	}{
 		{
 			name: "missing quotes around string value",
@@ -358,14 +358,6 @@ log_level = "info"
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-
-			if tt.errContains != "" && err != nil {
-				errMsg := err.Error()
-				if len(errMsg) > 0 && len(tt.errContains) > 0 {
-					// Just check that we have an error message
-					// Don't check exact contents since error formats may vary
-				}
-			}
 		})
 	}
 }
@@ -373,10 +365,10 @@ log_level = "info"
 // TestParseTOMLMultilineStrings tests TOML multiline string support
 func TestParseTOMLMultilineStrings(t *testing.T) {
 	tests := []struct {
+		checkFunc func(*Config) error
 		name      string
 		toml      string
 		wantErr   bool
-		checkFunc func(*Config) error
 	}{
 		{
 			name: "multiline string with triple quotes",

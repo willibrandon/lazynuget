@@ -9,10 +9,10 @@ import (
 // TestParseEnvVars tests the main environment variable parsing function
 func TestParseEnvVars(t *testing.T) {
 	tests := []struct {
-		name     string
 		envVars  map[string]string
-		prefix   string
 		wantVars map[string]string
+		name     string
+		prefix   string
 	}{
 		{
 			name: "parse simple env vars",
@@ -130,10 +130,10 @@ func TestParseEnvVars(t *testing.T) {
 // TestParseEnvVarsIntegration tests full integration with Config struct
 func TestParseEnvVarsIntegration(t *testing.T) {
 	tests := []struct {
-		name      string
 		envVars   map[string]string
-		prefix    string
 		checkFunc func(*Config) error
+		name      string
+		prefix    string
 	}{
 		{
 			name: "apply simple fields",

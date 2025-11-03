@@ -63,8 +63,8 @@ func TestConvertEnvVarPathToDotNotation(t *testing.T) {
 func TestJoinCamelCase(t *testing.T) {
 	tests := []struct {
 		name  string
-		parts []string
 		want  string
+		parts []string
 	}{
 		{
 			name:  "single word",
@@ -106,10 +106,10 @@ func TestJoinCamelCase(t *testing.T) {
 // TestApplyEnvVarValue tests applying environment variable values to Config
 func TestApplyEnvVarValue(t *testing.T) {
 	tests := []struct {
+		checkFunc func(*Config) error
 		name      string
 		path      string
 		value     string
-		checkFunc func(*Config) error
 	}{
 		{
 			name:  "set logLevel",
@@ -263,13 +263,13 @@ func TestParseBool(t *testing.T) {
 // assert is a simple assertion helper
 type assert struct{}
 
-func (assert) Errorf(format string, args ...interface{}) error {
+func (assert) Errorf(format string, args ...any) error {
 	return &assertError{msg: format, args: args}
 }
 
 type assertError struct {
 	msg  string
-	args []interface{}
+	args []any
 }
 
 func (e *assertError) Error() string {
@@ -278,4 +278,109 @@ func (e *assertError) Error() string {
 	}
 	// Simple format string replacement (not using fmt to keep it simple)
 	return e.msg
+}
+
+// TestApplyEnvVarValueUnsupportedNesting tests handling of deeply nested paths
+func TestApplyEnvVarValueUnsupportedNesting(t *testing.T) {
+	cfg := GetDefaultConfig()
+
+	// Test 4-level nesting (unsupported, should be ignored)
+	err := applyEnvVarValue(cfg, "level1.level2.level3.level4", "value")
+	if err != nil {
+		t.Errorf("applyEnvVarValue should not error on unsupported nesting, got: %v", err)
+	}
+
+	// Test 5-level nesting
+	err = applyEnvVarValue(cfg, "a.b.c.d.e", "value")
+	if err != nil {
+		t.Errorf("applyEnvVarValue should not error on unsupported nesting, got: %v", err)
+	}
+}
+
+// TestApplyTopLevelSettingAllFields tests all top-level field assignments
+func TestApplyTopLevelSettingAllFields(t *testing.T) {
+	tests := []struct {
+		checkFn func(*Config) bool
+		name    string
+		field   string
+		value   string
+	}{
+		{
+			name:  "version",
+			field: "version",
+			value: "1.0.0",
+			checkFn: func(cfg *Config) bool {
+				return cfg.Version == "1.0.0"
+			},
+		},
+		{
+			name:  "loadedFrom",
+			field: "loadedFrom",
+			value: "/path/to/config.yml",
+			checkFn: func(cfg *Config) bool {
+				return cfg.LoadedFrom == "/path/to/config.yml"
+			},
+		},
+		{
+			name:  "dateFormat",
+			field: "dateFormat",
+			value: "2006-01-02",
+			checkFn: func(cfg *Config) bool {
+				return cfg.DateFormat == "2006-01-02"
+			},
+		},
+		{
+			name:  "keybindingProfile",
+			field: "keybindingProfile",
+			value: "vim",
+			checkFn: func(cfg *Config) bool {
+				return cfg.KeybindingProfile == "vim"
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := GetDefaultConfig()
+			err := applyTopLevelSetting(cfg, tt.field, tt.value)
+			if err != nil {
+				t.Errorf("applyTopLevelSetting() error = %v", err)
+			}
+			if !tt.checkFn(cfg) {
+				t.Errorf("Field %s was not set correctly", tt.field)
+			}
+		})
+	}
+}
+
+// TestParseEnvVarsEdgeCases tests edge cases in env var parsing
+func TestParseEnvVarsEdgeCases(t *testing.T) {
+	tests := []struct {
+		name   string
+		prefix string
+	}{
+		{
+			name:   "empty prefix",
+			prefix: "",
+		},
+		{
+			name:   "prefix with underscore",
+			prefix: "TEST_",
+		},
+		{
+			name:   "no matching env vars",
+			prefix: "NONEXISTENT_",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// parseEnvVars should not panic
+			result := parseEnvVars(tt.prefix)
+			// Result should be a map (may be empty)
+			if result == nil {
+				t.Error("parseEnvVars returned nil map")
+			}
+		})
+	}
 }
