@@ -12,7 +12,7 @@ This guide helps developers build, test, and debug the LazyNuGet bootstrap syste
 
 ### Required Tools
 
-- **Go 1.21+**: [Download](https://go.dev/dl/)
+- **Go 1.24+**: [Download](https://go.dev/dl/)
 - **.NET SDK 6.0+**: [Download](https://dotnet.microsoft.com/download) (for runtime validation)
 - **Git**: For version control
 - **Make**: (Optional) For build automation
@@ -21,7 +21,7 @@ This guide helps developers build, test, and debug the LazyNuGet bootstrap syste
 
 ```bash
 # Check Go version
-go version  # Should show 1.21 or higher
+go version  # Should show 1.24 or higher
 
 # Check .NET SDK
 dotnet --version  # Should show 6.0 or higher
@@ -454,7 +454,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.24'
 
       - name: Build optimized binary
         run: make build

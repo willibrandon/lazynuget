@@ -13,7 +13,7 @@ Implement the core application bootstrap system that initializes LazyNuGet with 
 
 ## Technical Context
 
-**Language/Version**: Go 1.21+
+**Language/Version**: Go 1.24+
 **Primary Dependencies**:
 - Go standard library (flag, os, os/signal, context)
 - github.com/charmbracelet/bubbletea (TUI framework - deferred to Track 4)
