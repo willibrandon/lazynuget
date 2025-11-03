@@ -73,7 +73,8 @@ func TestMissingDotnetCLI(t *testing.T) {
 
 	// Create a temporary directory with NO dotnet executable
 	tmpDir := t.TempDir()
-	fakePath := tmpDir + ":/usr/bin:/bin" // Add minimal PATH without dotnet locations
+	// PATH with only temp dir - excludes /usr/bin and /usr/local/bin where dotnet lives
+	fakePath := tmpDir
 
 	// Run with PTY (real terminal) so app stays in interactive mode
 	cmd := exec.Command("../../lazynuget-test")
