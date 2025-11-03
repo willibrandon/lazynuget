@@ -1,0 +1,158 @@
+# LazyNuGet Configuration Example (YAML)
+# This file demonstrates all available configuration options
+# Copy this file to your config directory and customize as needed
+#
+# Platform-specific default locations:
+#   macOS:   ~/Library/Application Support/lazynuget/config.yml
+#   Linux:   ~/.config/lazynuget/config.yml
+#   Windows: %APPDATA%\lazynuget\config.yml
+
+# Application version (read-only, set by application)
+version: "1.0"
+
+# ========================================
+# UI Settings
+# ========================================
+
+# Visual theme for the TUI
+# Options: default, dark, light, solarized, dracula
+theme: default
+
+# Enable compact mode for denser information display
+compactMode: false
+
+# Show keyboard hints at the bottom of the screen
+showHints: true
+
+# Show line numbers in package/project lists
+showLineNumbers: false
+
+# Date/time format using Go time format syntax
+# See: https://golang.org/pkg/time/#pkg-constants
+dateFormat: "2006-01-02 15:04:05"
+
+# Keybinding profile
+# Options: default, vim, emacs
+keybindingProfile: default
+
+# Custom keybindings (optional)
+# Uncomment and customize as needed
+# keybindings:
+#   refresh:
+#     key: "ctrl+r"
+#     context: "global"
+#   quit:
+#     key: "q"
+#     context: "global"
+
+# ========================================
+# Color Scheme
+# ========================================
+
+colorScheme:
+  # Border colors (hex format: #RRGGBB)
+  border: "#5C6370"
+  borderFocus: "#61AFEF"
+
+  # Text colors
+  text: "#ABB2BF"
+  textDim: "#5C6370"
+  background: "#282C34"
+
+  # Semantic colors
+  highlight: "#61AFEF"
+  error: "#E06C75"
+  warning: "#E5C07B"
+  success: "#98C379"
+  info: "#61AFEF"
+
+# ========================================
+# Performance
+# ========================================
+
+# Maximum concurrent operations (1-16)
+# Increase for faster bulk operations on fast systems
+maxConcurrentOps: 4
+
+# Cache size in MB (1-1024)
+# Used for package metadata and search results
+cacheSize: 50
+
+# Refresh interval for automatic updates
+# Format: duration string (e.g., "5m", "1h", "30s")
+refreshInterval: 5m
+
+# ========================================
+# Timeouts
+# ========================================
+
+timeouts:
+  # Network request timeout
+  networkRequest: 30s
+
+  # .NET CLI command timeout
+  dotnetCli: 2m
+
+  # File operation timeout
+  fileOperation: 10s
+
+# ========================================
+# .NET CLI Integration
+# ========================================
+
+# Path to dotnet executable (auto-detected if empty)
+dotnetPath: ""
+
+# Verbosity level for dotnet CLI commands
+# Options: q[uiet], m[inimal], n[ormal], d[etailed], diag[nostic]
+dotnetVerbosity: minimal
+
+# ========================================
+# Logging
+# ========================================
+
+# Log level
+# Options: debug, info, warn, error
+logLevel: info
+
+# Log directory (platform-specific default if empty)
+logDir: ""
+
+# Log format
+# Options: json, text
+logFormat: text
+
+# Log rotation settings
+logRotation:
+  # Maximum log file size in MB before rotation
+  maxSize: 10
+
+  # Maximum age in days to keep old log files
+  maxAge: 30
+
+  # Maximum number of old log files to retain
+  maxBackups: 5
+
+  # Compress rotated log files
+  compress: true
+
+# ========================================
+# Advanced Features
+# ========================================
+
+# Enable hot-reload of configuration file changes
+# WARNING: May cause brief UI flicker during reload
+hotReload: false
+
+# ========================================
+# Encrypted Values
+# ========================================
+#
+# Sensitive values can be encrypted using the encrypt-value command:
+#   lazynuget encrypt-value "my-secret-value" keyID
+#
+# Example:
+#   apiKey: !encrypted <base64-encrypted-value>
+#
+# The encryption key must be stored in your platform keychain or
+# provided via environment variable LAZYNUGET_ENCRYPTION_KEY_<KEYID>

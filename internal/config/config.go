@@ -112,9 +112,9 @@ type configLoader struct {
 	validator *validator
 }
 
-// NewConfigLoader creates a new ConfigLoader instance.
+// NewLoader creates a new ConfigLoader instance.
 // See: T026
-func NewConfigLoader() ConfigLoader {
+func NewLoader() ConfigLoader {
 	schema := GetConfigSchema()
 	return &configLoader{
 		schema:    schema,

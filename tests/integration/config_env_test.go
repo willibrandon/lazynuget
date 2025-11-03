@@ -16,7 +16,7 @@ func TestEnvVarOverridesDefault(t *testing.T) {
 	os.Setenv("LAZYNUGET_LOG_LEVEL", "debug")
 	defer os.Unsetenv("LAZYNUGET_LOG_LEVEL")
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -46,7 +46,7 @@ func TestNestedEnvVarWorks(t *testing.T) {
 	os.Setenv("LAZYNUGET_COLOR_SCHEME_BORDER", "#FF0000")
 	defer os.Unsetenv("LAZYNUGET_COLOR_SCHEME_BORDER")
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -87,7 +87,7 @@ maxConcurrentOps: 6
 	os.Setenv("LAZYNUGET_LOG_LEVEL", "debug")
 	defer os.Unsetenv("LAZYNUGET_LOG_LEVEL")
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -122,7 +122,7 @@ func TestInvalidEnvVarFallbackToDefault(t *testing.T) {
 	os.Setenv("LAZYNUGET_LOG_LEVEL", "invalid_level")
 	defer os.Unsetenv("LAZYNUGET_LOG_LEVEL")
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -156,7 +156,7 @@ func TestEnvVarTypeConversion(t *testing.T) {
 	defer os.Unsetenv("LAZYNUGET_MAX_CONCURRENT_OPS")
 	defer os.Unsetenv("LAZYNUGET_REFRESH_INTERVAL")
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

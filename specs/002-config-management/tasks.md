@@ -273,17 +273,17 @@ LazyNuGet is a single project with the following structure:
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T135 [P] Add comprehensive godoc comments to all public types in internal/config/types.go
-- [ ] T136 [P] Add godoc comments to all public functions in internal/config/config.go
-- [ ] T137 [P] Create example config files in tests/fixtures/configs/example.yml and example.toml
-- [ ] T138 [P] Run go vet on internal/config/ package and fix any issues
-- [ ] T139 [P] Run go fmt on internal/config/ package
-- [ ] T140 [P] Run golangci-lint on internal/config/ package and address warnings
-- [ ] T141 Add unit tests for mergeConfigs() in internal/config/merger_test.go with table-driven tests
-- [ ] T142 Add unit tests for validation rules in internal/config/validator_test.go with table-driven tests
-- [ ] T143 Add unit tests for env var parsing in internal/config/env_test.go with table-driven tests
-- [ ] T144 Add unit tests for YAML parser in internal/config/parser_yaml_test.go
-- [ ] T145 Add unit tests for TOML parser in internal/config/parser_toml_test.go
+- [x] T135 [P] Add comprehensive godoc comments to all public types in internal/config/types.go
+- [x] T136 [P] Add godoc comments to all public functions in internal/config/config.go
+- [x] T137 [P] Create example config files in tests/fixtures/configs/example.yml and example.toml
+- [x] T138 [P] Run go vet on internal/config/ package and fix any issues
+- [x] T139 [P] Run go fmt on internal/config/ package
+- [x] T140 [P] Run golangci-lint on internal/config/ package and address warnings
+- [x] T141 Add unit tests for mergeConfigs() in internal/config/merger_test.go with table-driven tests
+- [x] T142 Add unit tests for validation rules in internal/config/validator_test.go with table-driven tests
+- [x] T143 Add unit tests for env var parsing in internal/config/env_test.go with table-driven tests
+- [x] T144 Add unit tests for YAML parser in internal/config/parser_yaml_test.go
+- [x] T145 Add unit tests for TOML parser in internal/config/parser_toml_test.go
 - [ ] T146 Run quickstart.md examples manually to verify all code samples work
 - [ ] T147 Update quickstart.md with any corrections from manual validation
 - [ ] T148 Run full integration test suite and verify >80% code coverage target

@@ -27,7 +27,7 @@ logLevel: info
 	os.Setenv("LAZYNUGET_LOG_LEVEL", "warn")
 	defer os.Unsetenv("LAZYNUGET_LOG_LEVEL")
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -69,7 +69,7 @@ maxConcurrentOps: 8
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -101,7 +101,7 @@ maxConcurrentOps: 8
 // T075: Test that --non-interactive flag works
 // See: FR-054
 func TestNonInteractiveFlagWorks(t *testing.T) {
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -131,7 +131,7 @@ func TestNonInteractiveFlagWorks(t *testing.T) {
 // T076: Test that --no-color flag works
 // See: FR-054
 func TestNoColorFlagWorks(t *testing.T) {
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -173,7 +173,7 @@ theme: dark
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -230,7 +230,7 @@ maxConcurrentOps: 8
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -282,7 +282,7 @@ maxConcurrentOps: 999
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

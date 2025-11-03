@@ -72,7 +72,7 @@ logLevel: !encrypted "invalid-encrypted-data-should-fail"
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	opts := config.LoadOptions{
 		ConfigFilePath: configPath,
 		EnvVarPrefix:   "LAZYNUGET_",

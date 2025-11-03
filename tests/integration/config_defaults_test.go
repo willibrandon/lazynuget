@@ -126,7 +126,7 @@ func TestGetDefaultConfig(t *testing.T) {
 func TestMissingConfigFileUsesDefaults(t *testing.T) {
 	// Per FR-002: Missing config at default location should silently use defaults
 	// Do NOT provide explicit ConfigFilePath - let it check default location
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -173,7 +173,7 @@ func TestEmptyConfigFileUsesDefaults(t *testing.T) {
 	}
 
 	// Create ConfigLoader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

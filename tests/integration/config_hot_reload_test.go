@@ -35,7 +35,7 @@ hotReload: true
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -108,7 +108,7 @@ hotReload: true
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -178,7 +178,7 @@ hotReload: true
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -253,7 +253,7 @@ hotReload: true
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -322,7 +322,7 @@ hotReload: true
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -390,7 +390,7 @@ hotReload: true
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

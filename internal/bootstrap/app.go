@@ -82,7 +82,7 @@ func (app *App) Bootstrap(flags *Flags) error {
 	app.phase = "config"
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Prepare load options from flags
 	loadOpts := config.LoadOptions{

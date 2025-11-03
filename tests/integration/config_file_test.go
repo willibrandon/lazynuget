@@ -22,7 +22,7 @@ func TestYAMLConfigLoadsAndOverridesDefaults(t *testing.T) {
 	}
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Load config with explicit file path
 	opts := config.LoadOptions{
@@ -85,7 +85,7 @@ func TestTOMLConfigLoadsAndOverridesDefaults(t *testing.T) {
 	}
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Load config with explicit file path
 	opts := config.LoadOptions{
@@ -140,7 +140,7 @@ func TestSyntaxErrorBlocksStartup(t *testing.T) {
 	}
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Attempt to load invalid config
 	opts := config.LoadOptions{
@@ -181,7 +181,7 @@ func TestSemanticErrorsFallbackToDefaults(t *testing.T) {
 	}
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Load config with semantic errors (non-strict mode)
 	opts := config.LoadOptions{
@@ -252,7 +252,7 @@ func TestBothFormatsPresentTriggersError(t *testing.T) {
 	}
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Attempt to load config from directory with both formats
 	// We'll try loading the YAML file explicitly, but the check should catch both formats
@@ -295,7 +295,7 @@ func TestUnknownKeysGenerateWarnings(t *testing.T) {
 	}
 
 	// Create config loader
-	loader := config.NewConfigLoader()
+	loader := config.NewLoader()
 
 	// Load config with unknown keys
 	opts := config.LoadOptions{
