@@ -56,6 +56,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := New(tt.level, tt.logPath)
+			defer logger.Close()
 
 			if logger == nil {
 				t.Fatal("New returned nil logger")
@@ -133,6 +134,7 @@ func TestLoggerMethods(t *testing.T) {
 			logPath := filepath.Join(tmpDir, "test.log")
 
 			logger := New(tt.level, logPath)
+			defer logger.Close()
 
 			// Log the message
 			tt.logFn(logger)
@@ -167,6 +169,7 @@ func TestNewWithInvalidLogPath(t *testing.T) {
 
 	// This should not panic, but fall back to stdout
 	logger := New("info", invalidPath)
+	defer logger.Close()
 
 	if logger == nil {
 		t.Fatal("New returned nil logger even with invalid path")
@@ -189,6 +192,7 @@ func TestNewWithFilePermissionError(t *testing.T) {
 
 	// Create logger (should succeed, creating directory if needed)
 	logger := New("info", logPath)
+	defer logger.Close()
 
 	if logger == nil {
 		t.Fatal("New returned nil logger")
@@ -243,6 +247,7 @@ func TestLogLevels(t *testing.T) {
 			logPath := filepath.Join(tmpDir, "test.log")
 
 			logger := New(tt.level, logPath)
+			defer logger.Close()
 			logger.Info("test info message")
 
 			content, err := os.ReadFile(logPath)
@@ -269,6 +274,7 @@ func TestLogFormattingWithArgs(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	logger := New("debug", logPath)
+	defer logger.Close()
 
 	tests := []struct {
 		name  string
@@ -329,6 +335,7 @@ func TestNewCreatesLogDirectory(t *testing.T) {
 	}
 
 	logger := New("info", logPath)
+	defer logger.Close()
 
 	if logger == nil {
 		t.Fatal("New returned nil logger")
@@ -357,6 +364,7 @@ func TestLogFilePermissions(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	logger := New("info", logPath)
+	defer logger.Close()
 	logger.Info("test message")
 
 	info, err := os.Stat(logPath)
@@ -378,6 +386,7 @@ func TestLogPathCleaning(t *testing.T) {
 
 	// Should not panic and should clean the path
 	logger := New("info", dirtyPath)
+	defer logger.Close()
 
 	if logger == nil {
 		t.Fatal("New returned nil logger")
@@ -396,6 +405,7 @@ func TestMultipleLogMessages(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	logger := New("info", logPath)
+	defer logger.Close()
 
 	messages := []string{
 		"first message",

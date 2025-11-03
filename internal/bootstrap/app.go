@@ -206,6 +206,12 @@ func (app *App) Bootstrap(flags *Flags) error {
 		app.logger.Debug("Hot-reload enabled but no config file path available (using defaults)")
 	}
 
+	// Register logger cleanup handler (runs last, after all other shutdown handlers)
+	app.RegisterShutdownHandler("logger", 999, func(_ context.Context) error {
+		app.logger.Debug("Closing logger")
+		return app.logger.Close()
+	})
+
 	// Transition to running state
 	app.phase = "ready"
 	if err := app.lifecycle.SetState(lifecycle.StateRunning); err != nil {
