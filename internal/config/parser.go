@@ -84,16 +84,44 @@ func checkMultipleFormats(configDir string) error {
 	return nil
 }
 
+// validateConfigFilePath performs security checks on config file paths.
+// Prevents path traversal and ensures file is accessible.
+func validateConfigFilePath(filePath string) error {
+	// Get absolute path to resolve any relative paths or symlinks
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return fmt.Errorf("invalid file path: %w", err)
+	}
+
+	// Check if file exists and is readable
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("cannot access file: %w", err)
+	}
+
+	// Ensure it's a regular file (not a directory or special file)
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("path is not a regular file: %s", absPath)
+	}
+
+	return nil
+}
+
 // parseConfigFile loads and parses a config file, handling syntax errors.
 // See: T049, FR-010
 func parseConfigFile(filePath string) (*Config, error) {
+	// Validate file path for security
+	if err := validateConfigFilePath(filePath); err != nil {
+		return nil, err
+	}
+
 	// Validate file size
 	if err := validateFileSize(filePath); err != nil {
 		return nil, err
 	}
 
-	// Read file content
-	data, err := os.ReadFile(filePath)
+	// Read file content (path validated above)
+	data, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -191,11 +192,9 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 
 // validateEnum checks if a value is in the allowed list and applies fallback default if invalid.
 // See: T053, T056, FR-012
-func (v *validator) validateEnum(value *string, allowed []string, field string, defaultValue string) *ValidationError {
-	for _, a := range allowed {
-		if *value == a {
-			return nil
-		}
+func (v *validator) validateEnum(value *string, allowed []string, field, defaultValue string) *ValidationError {
+	if slices.Contains(allowed, *value) {
+		return nil
 	}
 
 	// Invalid value - apply fallback default (T056)
@@ -214,7 +213,7 @@ func (v *validator) validateEnum(value *string, allowed []string, field string, 
 
 // validateAndFixHexColor validates a hex color and applies fallback default if invalid.
 // See: T053, T056, FR-012
-func (v *validator) validateAndFixHexColor(value *string, field string, defaultValue string, errors *[]ValidationError) {
+func (v *validator) validateAndFixHexColor(value *string, field, defaultValue string, errors *[]ValidationError) {
 	hexColorRegex := regexp.MustCompile(`^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$`)
 	if hexColorRegex.MatchString(*value) {
 		return
@@ -236,16 +235,8 @@ func (v *validator) validateAndFixHexColor(value *string, field string, defaultV
 
 // validateDateFormat validates a Go time format string.
 // See: T053, FR-012
-func (v *validator) validateDateFormat(format string, field string) *ValidationError {
-	// Try to format current time with the provided format to validate it
-	defer func() {
-		// Catch any panics from invalid format strings
-		if r := recover(); r != nil {
-			// Format is invalid
-		}
-	}()
-
-	// Test the format with a known time
+func (v *validator) validateDateFormat(format, field string) *ValidationError {
+	// Test the format with a known time (time.Format doesn't panic, so no recovery needed)
 	testTime := time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC)
 	result := testTime.Format(format)
 

@@ -7,8 +7,8 @@ import (
 func TestMergeConfigs(t *testing.T) {
 	// Create base config (defaults)
 	base := GetDefaultConfig()
-	baseLogLevel := base.LogLevel         // Should be "info"
-	baseMaxOps := base.MaxConcurrentOps   // Should be 4
+	baseLogLevel := base.LogLevel       // Should be "info"
+	baseMaxOps := base.MaxConcurrentOps // Should be 4
 
 	// Create override config (simulating parsed file)
 	override := &Config{

@@ -20,9 +20,9 @@ func TestResourceLeakDetection(t *testing.T) {
 
 	var buildCmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		buildCmd = exec.Command("go", "build", "-o", leakBinaryBase+".exe", "../../cmd/lazynuget/main.go")
+		buildCmd = exec.Command("go", "build", "-o", leakBinaryBase+".exe", "../../cmd/lazynuget")
 	} else {
-		buildCmd = exec.Command("go", "build", "-o", leakBinaryBase, "../../cmd/lazynuget/main.go")
+		buildCmd = exec.Command("go", "build", "-o", leakBinaryBase, "../../cmd/lazynuget")
 	}
 
 	if err := buildCmd.Run(); err != nil {
@@ -102,9 +102,9 @@ func TestConcurrentStartupShutdown(t *testing.T) {
 
 	var buildCmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		buildCmd = exec.Command("go", "build", "-o", concBinaryBase+".exe", "../../cmd/lazynuget/main.go")
+		buildCmd = exec.Command("go", "build", "-o", concBinaryBase+".exe", "../../cmd/lazynuget")
 	} else {
-		buildCmd = exec.Command("go", "build", "-o", concBinaryBase, "../../cmd/lazynuget/main.go")
+		buildCmd = exec.Command("go", "build", "-o", concBinaryBase, "../../cmd/lazynuget")
 	}
 
 	if err := buildCmd.Run(); err != nil {

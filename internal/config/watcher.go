@@ -26,11 +26,11 @@ const (
 // ConfigChangeEvent represents a configuration file change event.
 // See: contracts/watcher.md
 type ConfigChangeEvent struct {
+	Timestamp time.Time
+	Error     error
+	NewConfig *Config
 	Type      ConfigChangeType
 	FilePath  string
-	Timestamp time.Time
-	NewConfig *Config // nil if deleted or validation failed
-	Error     error   // non-nil if reload failed
 }
 
 // ConfigWatcher watches a configuration file for changes and triggers reloads.
@@ -47,35 +47,23 @@ type ConfigWatcher interface {
 // WatchOptions configures the config file watcher behavior.
 // See: contracts/watcher.md
 type WatchOptions struct {
-	// ConfigFilePath is the path to the config file to watch
+	OnReload       func(*Config)
+	OnError        func(error)
+	OnFileDeleted  func()
 	ConfigFilePath string
-
-	// LoadOptions are the options used to reload config
-	LoadOptions LoadOptions
-
-	// DebounceDelay is the delay before processing file change events
-	// Default: 100ms per FR-044
-	DebounceDelay time.Duration
-
-	// OnReload is called when config is successfully reloaded
-	OnReload func(*Config)
-
-	// OnError is called when config reload fails
-	OnError func(error)
-
-	// OnFileDeleted is called when the config file is deleted
-	OnFileDeleted func()
+	LoadOptions    LoadOptions
+	DebounceDelay  time.Duration
 }
 
 // configWatcher implements ConfigWatcher using fsnotify.
 type configWatcher struct {
-	opts       WatchOptions
 	loader     ConfigLoader
 	watcher    *fsnotify.Watcher
 	stopCh     chan struct{}
 	stoppedCh  chan struct{}
-	mu         sync.Mutex
 	lastConfig *Config
+	opts       WatchOptions
+	mu         sync.Mutex
 }
 
 // NewConfigWatcher creates a new config file watcher.
@@ -105,7 +93,7 @@ func NewConfigWatcher(opts WatchOptions, loader ConfigLoader) (ConfigWatcher, er
 
 	// Add file to watch
 	if err := fsWatcher.Add(absPath); err != nil {
-		fsWatcher.Close()
+		// fsWatcher will be garbage collected (calling Close here complicates error handling)
 		return nil, fmt.Errorf("failed to watch config file: %w", err)
 	}
 
@@ -169,7 +157,7 @@ func (cw *configWatcher) watchLoop(ctx context.Context, eventCh chan<- ConfigCha
 }
 
 // handleFileEvent processes a debounced file system event (T101)
-func (cw *configWatcher) handleFileEvent(ctx context.Context, event fsnotify.Event, eventCh chan<- ConfigChangeEvent, errCh chan<- error) {
+func (cw *configWatcher) handleFileEvent(ctx context.Context, event fsnotify.Event, eventCh chan<- ConfigChangeEvent, _ chan<- error) {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
 

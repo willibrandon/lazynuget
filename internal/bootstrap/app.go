@@ -17,20 +17,20 @@ import (
 // App represents the running LazyNuGet application instance.
 type App struct {
 	startTime    time.Time
-	logger       logging.Logger
+	configLoader config.ConfigLoader
 	platform     platform.Platform
 	gui          any
 	ctx          context.Context
-	config       *config.Config
-	configMu     sync.RWMutex
-	configPath   string
-	configLoader config.ConfigLoader
 	watcher      config.ConfigWatcher
-	lifecycle    *lifecycle.Manager
+	logger       logging.Logger
+	config       *config.Config
 	cancel       context.CancelFunc
+	lifecycle    *lifecycle.Manager
 	version      VersionInfo
+	configPath   string
 	phase        string
 	runMode      platform.RunMode
+	configMu     sync.RWMutex
 	guiOnce      sync.Once
 }
 
@@ -191,7 +191,7 @@ func (app *App) Bootstrap(flags *Flags) error {
 				}()
 
 				// Register shutdown handler to stop watcher
-				app.RegisterShutdownHandler("config-watcher", 100, func(ctx context.Context) error {
+				app.RegisterShutdownHandler("config-watcher", 100, func(_ context.Context) error {
 					if app.watcher != nil {
 						app.logger.Debug("Stopping config file watcher")
 						return app.watcher.Stop()

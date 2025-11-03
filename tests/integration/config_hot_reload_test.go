@@ -31,7 +31,7 @@ func TestHotReloadDetectsChanges(t *testing.T) {
 	initialConfig := `logLevel: info
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
@@ -73,7 +73,7 @@ hotReload: true
 	updatedConfig := `logLevel: debug
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(updatedConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(updatedConfig), 0o644); err != nil {
 		t.Fatalf("Failed to update config: %v", err)
 	}
 
@@ -104,7 +104,7 @@ func TestInvalidReloadKeepsPreviousConfig(t *testing.T) {
 	validConfig := `logLevel: debug
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(validConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(validConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
@@ -139,7 +139,7 @@ hotReload: true
 	// Write invalid config
 	time.Sleep(200 * time.Millisecond)
 	invalidConfig := `invalid yaml {{`
-	if err := os.WriteFile(configPath, []byte(invalidConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(invalidConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write invalid config: %v", err)
 	}
 
@@ -174,7 +174,7 @@ func TestHotReloadSuccessNotification(t *testing.T) {
 	initialConfig := `logLevel: info
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
@@ -192,7 +192,7 @@ hotReload: true
 	watcher, err := config.NewConfigWatcher(config.WatchOptions{
 		ConfigFilePath: configPath,
 		LoadOptions:    opts,
-		OnReload: func(cfg *config.Config) {
+		OnReload: func(_ *config.Config) {
 			reloadMu.Lock()
 			reloadCalled = true
 			reloadMu.Unlock()
@@ -213,7 +213,7 @@ hotReload: true
 	updatedConfig := `logLevel: debug
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(updatedConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(updatedConfig), 0o644); err != nil {
 		t.Fatalf("Failed to update config: %v", err)
 	}
 
@@ -249,7 +249,7 @@ func TestHotReloadFailureNotification(t *testing.T) {
 	validConfig := `logLevel: info
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(validConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(validConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
@@ -267,7 +267,7 @@ hotReload: true
 	watcher, err := config.NewConfigWatcher(config.WatchOptions{
 		ConfigFilePath: configPath,
 		LoadOptions:    opts,
-		OnError: func(err error) {
+		OnError: func(_ error) {
 			errorMu.Lock()
 			errorCalled = true
 			errorMu.Unlock()
@@ -286,7 +286,7 @@ hotReload: true
 	// Write invalid config
 	time.Sleep(200 * time.Millisecond)
 	invalidConfig := `{{{ invalid`
-	if err := os.WriteFile(configPath, []byte(invalidConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(invalidConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write invalid config: %v", err)
 	}
 
@@ -318,7 +318,7 @@ func TestConfigFileDeletion(t *testing.T) {
 	initialConfig := `logLevel: info
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
@@ -386,7 +386,7 @@ func TestRapidWritesDebounced(t *testing.T) {
 	initialConfig := `logLevel: info
 hotReload: true
 `
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(initialConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
@@ -400,9 +400,9 @@ hotReload: true
 	}
 
 	watcher, err := config.NewConfigWatcher(config.WatchOptions{
-		ConfigFilePath:  configPath,
-		LoadOptions:     opts,
-		DebounceDelay: 100 * time.Millisecond, // 100ms debounce
+		ConfigFilePath: configPath,
+		LoadOptions:    opts,
+		DebounceDelay:  100 * time.Millisecond, // 100ms debounce
 	}, loader)
 	if err != nil {
 		t.Fatalf("NewConfigWatcher() failed: %v", err)
@@ -417,11 +417,11 @@ hotReload: true
 	time.Sleep(200 * time.Millisecond) // Let watcher initialize
 
 	// Write multiple times rapidly (5 writes in 50ms)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		config := `logLevel: debug
 hotReload: true
 `
-		if err := os.WriteFile(configPath, []byte(config), 0644); err != nil {
+		if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
 		time.Sleep(10 * time.Millisecond)

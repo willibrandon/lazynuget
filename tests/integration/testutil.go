@@ -9,7 +9,7 @@ import (
 
 const (
 	testBinaryBase   = "../../lazynuget-test"
-	testBinarySource = "../../cmd/lazynuget/main.go"
+	testBinarySource = "../../cmd/lazynuget"
 )
 
 // buildTestBinary builds the lazynuget binary for testing with correct platform extension.
@@ -20,6 +20,7 @@ func buildTestBinary(t *testing.T) string {
 	binaryPath := testBinaryBase + getPlatformExt()
 
 	// Build with literal paths to satisfy gosec G204 security check
+	// Build all files in cmd/lazynuget directory (not just main.go)
 	var buildCmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		buildCmd = exec.Command("go", "build", "-o", testBinaryBase+".exe", testBinarySource)

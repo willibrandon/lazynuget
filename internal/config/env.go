@@ -70,21 +70,13 @@ func splitEnvVarPath(envPath string) []string {
 	return strings.Split(envPath, "_")
 }
 
-// toCamelCase converts an uppercase word to camelCase.
-// Examples: "LOG" -> "log", "SCHEME" -> "scheme", "BORDER" -> "border"
-func toCamelCase(word string) string {
-	if word == "" {
-		return ""
-	}
-	return strings.ToLower(word[:1]) + strings.ToLower(word[1:])
-}
-
 // toCamelCaseMulti converts a slice of uppercase words to camelCase path,
 // detecting known nested structures.
 // Examples:
-//   ["LOG", "LEVEL"] -> "logLevel"
-//   ["COLOR", "SCHEME", "BORDER"] -> "colorScheme.border"
-//   ["LOG", "ROTATION", "MAX", "SIZE"] -> "logRotation.maxSize"
+//
+//	["LOG", "LEVEL"] -> "logLevel"
+//	["COLOR", "SCHEME", "BORDER"] -> "colorScheme.border"
+//	["LOG", "ROTATION", "MAX", "SIZE"] -> "logRotation.maxSize"
 func toCamelCaseMulti(parts []string) string {
 	if len(parts) == 0 {
 		return ""
@@ -92,10 +84,10 @@ func toCamelCaseMulti(parts []string) string {
 
 	// Known nested structures (parent.child format)
 	knownNested := map[string][]string{
-		"colorScheme":  {"COLOR", "SCHEME"},
-		"timeouts":     {"TIMEOUTS"},
-		"logRotation":  {"LOG", "ROTATION"},
-		"keybindings":  {"KEYBINDINGS"},
+		"colorScheme": {"COLOR", "SCHEME"},
+		"timeouts":    {"TIMEOUTS"},
+		"logRotation": {"LOG", "ROTATION"},
+		"keybindings": {"KEYBINDINGS"},
 	}
 
 	// Check if we have a known nested structure at the beginning
@@ -114,12 +106,12 @@ func toCamelCaseMulti(parts []string) string {
 }
 
 // matchesParts checks if actualParts matches expectedParts (case-insensitive)
-func matchesParts(actualParts []string, expectedParts []string) bool {
+func matchesParts(actualParts, expectedParts []string) bool {
 	if len(actualParts) != len(expectedParts) {
 		return false
 	}
 	for i := range actualParts {
-		if strings.ToUpper(actualParts[i]) != strings.ToUpper(expectedParts[i]) {
+		if !strings.EqualFold(actualParts[i], expectedParts[i]) {
 			return false
 		}
 	}
@@ -128,9 +120,10 @@ func matchesParts(actualParts []string, expectedParts []string) bool {
 
 // joinCamelCase converts a slice of uppercase words to a single camelCase identifier.
 // Examples:
-//   ["LOG", "LEVEL"] -> "logLevel"
-//   ["MAX", "SIZE"] -> "maxSize"
-//   ["BORDER"] -> "border"
+//
+//	["LOG", "LEVEL"] -> "logLevel"
+//	["MAX", "SIZE"] -> "maxSize"
+//	["BORDER"] -> "border"
 func joinCamelCase(parts []string) string {
 	if len(parts) == 0 {
 		return ""
@@ -152,7 +145,7 @@ func joinCamelCase(parts []string) string {
 // dot-notation path and string value from an environment variable.
 // Per FR-052: Supports type conversion for bool/int/duration/string
 // Per FR-012: Invalid values fall back to defaults (handled by caller)
-func applyEnvVarValue(cfg *Config, path string, value string) error {
+func applyEnvVarValue(cfg *Config, path, value string) error {
 	// Split path into components
 	parts := strings.Split(path, ".")
 
@@ -174,7 +167,7 @@ func applyEnvVarValue(cfg *Config, path string, value string) error {
 }
 
 // applyTopLevelSetting sets a top-level config field from an env var string value
-func applyTopLevelSetting(cfg *Config, field string, value string) error {
+func applyTopLevelSetting(cfg *Config, field, value string) error {
 	switch field {
 	case "version":
 		cfg.Version = value
@@ -230,7 +223,7 @@ func applyTopLevelSetting(cfg *Config, field string, value string) error {
 }
 
 // applyNestedSetting sets a nested config field (e.g., colorScheme.border)
-func applyNestedSetting(cfg *Config, parent string, field string, value string) error {
+func applyNestedSetting(cfg *Config, parent, field, value string) error {
 	switch parent {
 	case "colorScheme":
 		switch field {
@@ -295,7 +288,7 @@ func applyNestedSetting(cfg *Config, parent string, field string, value string) 
 }
 
 // applyDoubleNestedSetting sets a double-nested config field (future expansion)
-func applyDoubleNestedSetting(cfg *Config, parent string, child string, field string, value string) error {
+func applyDoubleNestedSetting(_ *Config, _, _, _, _ string) error {
 	// Currently no triple-nested settings in our config
 	// This is here for future extensibility
 	return nil

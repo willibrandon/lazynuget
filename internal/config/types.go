@@ -11,41 +11,28 @@ import (
 // Config is the root configuration object containing all application settings.
 // See: specs/002-config-management/data-model.md entity #1
 type Config struct {
-	// Meta
-	Version    string    `yaml:"version" toml:"version"`
-	LoadedFrom string    `yaml:"-" toml:"-"`
-	LoadedAt   time.Time `yaml:"-" toml:"-"`
-
-	// UI Settings (FR-020 through FR-025)
-	Theme           string      `yaml:"theme" toml:"theme" validate:"oneof=default dark light solarized" default:"default"`
-	ColorScheme     ColorScheme `yaml:"colorScheme" toml:"color_scheme"`
-	CompactMode     bool        `yaml:"compactMode" toml:"compact_mode" default:"false"`
-	ShowHints       bool        `yaml:"showHints" toml:"show_hints" default:"true"`
-	ShowLineNumbers bool        `yaml:"showLineNumbers" toml:"show_line_numbers" default:"false"`
-	DateFormat      string      `yaml:"dateFormat" toml:"date_format" validate:"dateformat" default:"2006-01-02"`
-
-	// Keybindings (FR-026 through FR-030)
+	LoadedAt          time.Time             `yaml:"-" toml:"-"`
 	Keybindings       map[string]KeyBinding `yaml:"keybindings" toml:"keybindings"`
+	ColorScheme       ColorScheme           `yaml:"colorScheme" toml:"color_scheme"`
+	DotnetPath        string                `yaml:"dotnetPath" toml:"dotnet_path" default:""`
+	DotnetVerbosity   string                `yaml:"dotnetVerbosity" toml:"dotnet_verbosity" validate:"oneof=quiet minimal normal detailed diagnostic" default:"minimal"`
+	LogFormat         string                `yaml:"logFormat" toml:"log_format" validate:"oneof=text json" default:"text"`
+	LogDir            string                `yaml:"logDir" toml:"log_dir" default:""`
+	LogLevel          string                `yaml:"logLevel" toml:"log_level" validate:"oneof=debug info warn error" default:"info"`
+	DateFormat        string                `yaml:"dateFormat" toml:"date_format" validate:"dateformat" default:"2006-01-02"`
+	LoadedFrom        string                `yaml:"-" toml:"-"`
 	KeybindingProfile string                `yaml:"keybindingProfile" toml:"keybinding_profile" validate:"oneof=default vim emacs" default:"default"`
-
-	// Performance (FR-031 through FR-034)
-	MaxConcurrentOps int           `yaml:"maxConcurrentOps" toml:"max_concurrent_ops" validate:"min=1,max=16" default:"4"`
-	CacheSize        int           `yaml:"cacheSize" toml:"cache_size" validate:"min=0" default:"50"` // MB
-	RefreshInterval  time.Duration `yaml:"refreshInterval" toml:"refresh_interval" validate:"min=0" default:"0"`
-	Timeouts         Timeouts      `yaml:"timeouts" toml:"timeouts"`
-
-	// Dotnet CLI Integration (FR-035 through FR-038)
-	DotnetPath      string `yaml:"dotnetPath" toml:"dotnet_path" default:""`
-	DotnetVerbosity string `yaml:"dotnetVerbosity" toml:"dotnet_verbosity" validate:"oneof=quiet minimal normal detailed diagnostic" default:"minimal"`
-
-	// Logging (FR-039 through FR-042)
-	LogLevel    string      `yaml:"logLevel" toml:"log_level" validate:"oneof=debug info warn error" default:"info"`
-	LogDir      string      `yaml:"logDir" toml:"log_dir" default:""`
-	LogFormat   string      `yaml:"logFormat" toml:"log_format" validate:"oneof=text json" default:"text"`
-	LogRotation LogRotation `yaml:"logRotation" toml:"log_rotation"`
-
-	// Hot-Reload (FR-043 through FR-049)
-	HotReload bool `yaml:"hotReload" toml:"hot_reload" default:"false"`
+	Theme             string                `yaml:"theme" toml:"theme" validate:"oneof=default dark light solarized" default:"default"`
+	Version           string                `yaml:"version" toml:"version"`
+	LogRotation       LogRotation           `yaml:"logRotation" toml:"log_rotation"`
+	Timeouts          Timeouts              `yaml:"timeouts" toml:"timeouts"`
+	RefreshInterval   time.Duration         `yaml:"refreshInterval" toml:"refresh_interval" validate:"min=0" default:"0"`
+	CacheSize         int                   `yaml:"cacheSize" toml:"cache_size" validate:"min=0" default:"50"`
+	MaxConcurrentOps  int                   `yaml:"maxConcurrentOps" toml:"max_concurrent_ops" validate:"min=1,max=16" default:"4"`
+	ShowLineNumbers   bool                  `yaml:"showLineNumbers" toml:"show_line_numbers" default:"false"`
+	ShowHints         bool                  `yaml:"showHints" toml:"show_hints" default:"true"`
+	CompactMode       bool                  `yaml:"compactMode" toml:"compact_mode" default:"false"`
+	HotReload         bool                  `yaml:"hotReload" toml:"hot_reload" default:"false"`
 }
 
 // ColorScheme defines customizable colors for UI elements.
@@ -92,30 +79,30 @@ type LogRotation struct {
 // ConfigSource represents one of the four configuration sources.
 // See: specs/002-config-management/data-model.md entity #6
 type ConfigSource struct {
-	Name       string
-	Precedence int
-	Data       map[string]interface{}
-	FilePath   string
 	LoadedAt   time.Time
+	Data       map[string]any
+	Name       string
+	FilePath   string
+	Precedence int
 }
 
 // MergedConfig tracks which source provided each setting (for debugging).
 // See: specs/002-config-management/data-model.md entity #7
 type MergedConfig struct {
-	Final      Config
-	Provenance map[string]ConfigSource
 	MergedAt   time.Time
+	Provenance map[string]ConfigSource
+	Final      Config
 }
 
 // ValidationError describes a configuration validation failure.
 // See: specs/002-config-management/data-model.md entity #8
 type ValidationError struct {
+	Value        any
+	DefaultUsed  any
 	Key          string
-	Value        interface{}
 	Constraint   string
 	SuggestedFix string
 	Severity     string
-	DefaultUsed  interface{}
 }
 
 // Error implements the error interface for ValidationError.
@@ -129,28 +116,35 @@ func (ve ValidationError) Error() string {
 // EncryptedValue represents an encrypted configuration value.
 // See: specs/002-config-management/data-model.md entity #9
 type EncryptedValue struct {
-	Ciphertext  []byte
-	Nonce       []byte
+	EncryptedAt time.Time
 	KeyID       string
 	Algorithm   string
-	EncryptedAt time.Time
+	Ciphertext  []byte
+	Nonce       []byte
+}
+
+// String returns a safe string representation that never exposes plaintext.
+// See: FR-018
+func (ev *EncryptedValue) String() string {
+	return fmt.Sprintf("EncryptedValue{KeyID=%s, Algorithm=%s, CiphertextLen=%d, NonceLen=%d}",
+		ev.KeyID, ev.Algorithm, len(ev.Ciphertext), len(ev.Nonce))
 }
 
 // SettingSchema defines the schema for a single configuration setting.
 // See: specs/002-config-management/data-model.md entity #10
 type SettingSchema struct {
-	Path          string
 	Type          reflect.Type
-	Constraints   []Constraint
-	Default       interface{}
-	HotReloadable bool
+	Default       any
+	Path          string
 	Description   string
+	Constraints   []Constraint
+	HotReloadable bool
 }
 
 // Constraint defines a validation constraint for a setting.
 type Constraint struct {
 	Type    string
-	Params  interface{}
+	Params  any
 	Message string
 }
 

@@ -74,29 +74,11 @@ type ConfigLoader interface {
 // LoadOptions configures the behavior of the config loading process.
 // See: specs/002-config-management/contracts/config_loader.md
 type LoadOptions struct {
-	// ConfigFilePath explicitly specifies the config file path.
-	// If empty, uses platform-specific default location.
-	// Can be overridden by LAZYNUGET_CONFIG environment variable.
-	// Maps to: --config CLI flag (FR-007) or LAZYNUGET_CONFIG env var (FR-008)
+	Logger         Logger
 	ConfigFilePath string
-
-	// CLIFlags provides command-line flag values to override other sources.
-	// Maps to: various --flag arguments (FR-053, FR-054)
-	CLIFlags CLIFlags
-
-	// EnvVarPrefix specifies the prefix for environment variable overrides.
-	// Default: "LAZYNUGET_"
-	// Maps to: FR-050
-	EnvVarPrefix string
-
-	// StrictMode when true treats semantic validation errors as blocking.
-	// Default: false (semantic errors log warnings and fall back to defaults)
-	// This option is primarily for testing and CI environments.
-	StrictMode bool
-
-	// Logger for logging validation warnings and debug information.
-	// If nil, logging is silently skipped (useful for testing).
-	Logger Logger
+	EnvVarPrefix   string
+	CLIFlags       CLIFlags
+	StrictMode     bool
 }
 
 // CLIFlags contains command-line flag values that override other config sources.
@@ -117,10 +99,10 @@ type CLIFlags struct {
 // Allows the config package to log without depending on the application's logging implementation.
 // See: specs/002-config-management/contracts/config_loader.md
 type Logger interface {
-	Debug(msg string, keysAndValues ...interface{})
-	Info(msg string, keysAndValues ...interface{})
-	Warn(msg string, keysAndValues ...interface{})
-	Error(msg string, keysAndValues ...interface{})
+	Debug(msg string, keysAndValues ...any)
+	Info(msg string, keysAndValues ...any)
+	Warn(msg string, keysAndValues ...any)
+	Error(msg string, keysAndValues ...any)
 }
 
 // configLoader is the concrete implementation of ConfigLoader interface.
@@ -188,6 +170,40 @@ func (cl *configLoader) Load(ctx context.Context, opts LoadOptions) (*Config, er
 			if err != nil {
 				// Syntax errors are blocking (FR-010)
 				return nil, fmt.Errorf("failed to load config file %s: %w", configFilePath, err)
+			}
+
+			// Handle encrypted values (T131, T132)
+			// Create encryptor for decryption
+			keychain := NewKeychainManager()
+			kd := NewKeyDerivation()
+			encryptor := NewEncryptor(keychain, kd)
+
+			// Attempt to decrypt any encrypted values in the config file
+			// Path already validated by parseConfigFile above
+			fileData, err := os.ReadFile(filepath.Clean(configFilePath))
+			if err == nil {
+				_, encryptedFields, scanErr := parseYAMLWithEncryption(fileData)
+				if scanErr == nil && len(encryptedFields) > 0 {
+					// Attempt to decrypt each encrypted field
+					for fieldPath, encryptedValue := range encryptedFields {
+						_, decryptErr := encryptor.Decrypt(ctx, encryptedValue)
+						if decryptErr != nil {
+							// FR-018: Log warning but continue (fall back to default)
+							if opts.Logger != nil {
+								opts.Logger.Warn("Failed to decrypt field %s: %v (falling back to default)", fieldPath, decryptErr)
+							}
+							// Don't block loading - validation will handle fallback to default
+						} else {
+							// Successfully decrypted - apply to config
+							// For now, we log it but don't apply (since we'd need field mapping)
+							if opts.Logger != nil {
+								opts.Logger.Debug("Successfully decrypted field: %s", fieldPath)
+							}
+							// TODO: Apply decrypted value to cfg using reflection or field mapping
+							// For Phase 8, we'll handle this in integration tests with known fields
+						}
+					}
+				}
 			}
 
 			if opts.Logger != nil {
@@ -276,7 +292,7 @@ func (cl *configLoader) Load(ctx context.Context, opts LoadOptions) (*Config, er
 
 // Validate implements ConfigLoader.Validate()
 // See: T030, FR-056
-func (cl *configLoader) Validate(ctx context.Context, cfg *Config) ([]ValidationError, error) {
+func (cl *configLoader) Validate(_ context.Context, cfg *Config) ([]ValidationError, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is nil")
 	}

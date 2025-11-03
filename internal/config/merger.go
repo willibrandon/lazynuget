@@ -1,13 +1,14 @@
 package config
 
 import (
+	"maps"
 	"time"
 )
 
 // mergeConfigs merges configuration from multiple sources with precedence.
 // Precedence order (highest to lowest): CLI flags > env vars > file > defaults
 // See: T051, FR-002
-func mergeConfigs(base *Config, override *Config) *Config {
+func mergeConfigs(base, override *Config) *Config {
 	// Start with base config (lower precedence)
 	merged := *base
 
@@ -18,7 +19,7 @@ func mergeConfigs(base *Config, override *Config) *Config {
 	if override.Theme != "" && override.Theme != base.Theme {
 		merged.Theme = override.Theme
 	}
-	
+
 	// ColorScheme - merge individual fields
 	if override.ColorScheme.Border != "" && override.ColorScheme.Border != base.ColorScheme.Border {
 		merged.ColorScheme.Border = override.ColorScheme.Border
@@ -69,9 +70,7 @@ func mergeConfigs(base *Config, override *Config) *Config {
 		if merged.Keybindings == nil {
 			merged.Keybindings = make(map[string]KeyBinding)
 		}
-		for k, v := range override.Keybindings {
-			merged.Keybindings[k] = v
-		}
+		maps.Copy(merged.Keybindings, override.Keybindings)
 	}
 
 	// Performance

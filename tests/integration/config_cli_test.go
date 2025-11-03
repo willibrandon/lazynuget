@@ -19,7 +19,7 @@ func TestCLIFlagOverridesAllSources(t *testing.T) {
 	configContent := `
 logLevel: info
 `
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -65,7 +65,7 @@ logLevel: debug
 theme: dark
 maxConcurrentOps: 8
 `
-	if err := os.WriteFile(customConfigPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(customConfigPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -169,7 +169,7 @@ func TestPrintConfigOutputsMergedConfig(t *testing.T) {
 logLevel: debug
 theme: dark
 `
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -226,7 +226,7 @@ logLevel: debug
 theme: dark
 maxConcurrentOps: 8
 `
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
@@ -278,7 +278,7 @@ func TestValidateConfigCatchesErrors(t *testing.T) {
 logLevel: invalid_level
 maxConcurrentOps: 999
 `
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 

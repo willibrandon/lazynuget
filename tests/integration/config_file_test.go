@@ -192,7 +192,6 @@ func TestSemanticErrorsFallbackToDefaults(t *testing.T) {
 	}
 
 	cfg, err := loader.Load(context.Background(), opts)
-
 	// In non-strict mode, semantic errors should not block startup
 	if err != nil {
 		t.Fatalf("Expected no error in non-strict mode, got: %v", err)
@@ -307,7 +306,6 @@ func TestUnknownKeysGenerateWarnings(t *testing.T) {
 	}
 
 	cfg, err := loader.Load(context.Background(), opts)
-
 	// Unknown keys should not block startup in non-strict mode
 	if err != nil {
 		t.Fatalf("Expected no error for unknown keys in non-strict mode, got: %v", err)

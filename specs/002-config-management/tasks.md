@@ -238,34 +238,34 @@ LazyNuGet is a single project with the following structure:
 
 ### Tests for Encryption
 
-- [ ] T110 [P] Create tests/fixtures/configs/encrypted.yml with sample encrypted value
-- [ ] T111 [P] Create integration test in tests/integration/config_encryption_test.go verifying encrypted value decrypts correctly
-- [ ] T112 [P] Create integration test in tests/integration/config_encryption_test.go verifying decryption failure falls back to default per FR-012
-- [ ] T113 [P] Create integration test in tests/integration/config_encryption_test.go verifying keychain unavailable falls back to env var
-- [ ] T114 [P] Create integration test in tests/integration/config_encryption_test.go verifying encrypted values never logged in plain text per FR-018
+- [x] T110 [P] Create tests/fixtures/configs/encrypted.yml with sample encrypted value
+- [x] T111 [P] Create integration test in tests/integration/config_encryption_test.go verifying encrypted value decrypts correctly
+- [x] T112 [P] Create integration test in tests/integration/config_encryption_test.go verifying decryption failure falls back to default per FR-012
+- [x] T113 [P] Create integration test in tests/integration/config_encryption_test.go verifying keychain unavailable falls back to env var
+- [x] T114 [P] Create integration test in tests/integration/config_encryption_test.go verifying encrypted values never logged in plain text per FR-018
 
 ### Implementation for Encryption
 
-- [ ] T115 [P] Define Encryptor interface in internal/config/encryption.go per contracts/encryption.md
-- [ ] T116 [P] Define KeychainManager interface in internal/config/keychain.go per contracts/encryption.md
-- [ ] T117 [P] Define KeyDerivation interface in internal/config/encryption.go per contracts/encryption.md
-- [ ] T118 Implement encryptor struct in internal/config/encryption.go using crypto/aes and crypto/cipher (AES-256-GCM)
-- [ ] T119 Implement Encrypt() method in internal/config/encryption.go per FR-016 and contract
-- [ ] T120 Implement Decrypt() method in internal/config/encryption.go per FR-016 and contract
-- [ ] T121 Implement EncryptToString() method in internal/config/encryption.go per FR-019 and contract
-- [ ] T122 Implement DecryptFromString() method in internal/config/encryption.go per contract
-- [ ] T123 Implement keychainManager struct in internal/config/keychain.go using github.com/zalando/go-keyring per FR-017
-- [ ] T124 Implement Store() method in internal/config/keychain.go per contract
-- [ ] T125 Implement Retrieve() method in internal/config/keychain.go with env var fallback per contract
-- [ ] T126 Implement Delete() method in internal/config/keychain.go per contract
-- [ ] T127 Implement List() method in internal/config/keychain.go per contract
-- [ ] T128 Implement IsAvailable() method in internal/config/keychain.go per contract
-- [ ] T129 Implement keyDerivation using PBKDF2 in internal/config/encryption.go per contract
-- [ ] T130 Implement custom YAML unmarshaling for !encrypted tag in internal/config/parser_yaml.go
-- [ ] T131 Update Load() to decrypt EncryptedValue instances in internal/config/config.go
-- [ ] T132 Add warning logging for decryption failures in internal/config/config.go per FR-018
-- [ ] T133 Create cmd/lazynuget/encrypt.go implementing `lazynuget encrypt-value` subcommand per FR-019
-- [ ] T134 Verify T110-T114 tests now pass with encryption implementation
+- [x] T115 [P] Define Encryptor interface in internal/config/encryption.go per contracts/encryption.md
+- [x] T116 [P] Define KeychainManager interface in internal/config/keychain.go per contracts/encryption.md
+- [x] T117 [P] Define KeyDerivation interface in internal/config/encryption.go per contracts/encryption.md
+- [x] T118 Implement encryptor struct in internal/config/encryption.go using crypto/aes and crypto/cipher (AES-256-GCM)
+- [x] T119 Implement Encrypt() method in internal/config/encryption.go per FR-016 and contract
+- [x] T120 Implement Decrypt() method in internal/config/encryption.go per FR-016 and contract
+- [x] T121 Implement EncryptToString() method in internal/config/encryption.go per FR-019 and contract
+- [x] T122 Implement DecryptFromString() method in internal/config/encryption.go per contract
+- [x] T123 Implement keychainManager struct in internal/config/keychain.go using github.com/zalando/go-keyring per FR-017
+- [x] T124 Implement Store() method in internal/config/keychain.go per contract
+- [x] T125 Implement Retrieve() method in internal/config/keychain.go with env var fallback per contract
+- [x] T126 Implement Delete() method in internal/config/keychain.go per contract
+- [x] T127 Implement List() method in internal/config/keychain.go per contract
+- [x] T128 Implement IsAvailable() method in internal/config/keychain.go per contract
+- [x] T129 Implement keyDerivation using PBKDF2 in internal/config/encryption.go per contract
+- [x] T130 Implement custom YAML unmarshaling for !encrypted tag in internal/config/parser_yaml.go
+- [x] T131 Update Load() to decrypt EncryptedValue instances in internal/config/config.go
+- [x] T132 Add warning logging for decryption failures in internal/config/config.go per FR-018
+- [x] T133 Create cmd/lazynuget/encrypt.go implementing `lazynuget encrypt-value` subcommand per FR-019
+- [x] T134 Verify T110-T114 tests now pass with encryption implementation
 
 ---
 

@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,10 +19,10 @@ func TestNonInteractiveFlagExplicit(t *testing.T) {
 
 	// Capture both stdout and stderr since logs go to stderr
 	output, err := cmd.CombinedOutput()
-
 	// Check exit status
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			// Non-zero exit is acceptable if it's a controlled shutdown
 			if exitErr.ExitCode() > 2 {
 				t.Fatalf("Process exited with unexpected error code %d: %v\nOutput: %s",
@@ -88,7 +89,8 @@ func TestCIEnvironmentDetection(t *testing.T) {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Non-zero exit is OK for this test - we just want to verify detection
-		if _, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			// Application exited with non-zero code, which is fine
 			outputStr := string(output)
 			if !strings.Contains(outputStr, "non-interactive") {
@@ -153,7 +155,8 @@ func TestDumbTerminalDetection(t *testing.T) {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Non-zero exit is OK for this test - we just want to verify detection
-		if _, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			// Application exited with non-zero code, which is fine
 			outputStr := string(output)
 			if !strings.Contains(outputStr, "non-interactive") {
