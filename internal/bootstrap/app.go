@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/willibrandon/lazynuget/internal/config"
+	"github.com/willibrandon/lazynuget/internal/lifecycle"
 	"github.com/willibrandon/lazynuget/internal/logging"
 	"github.com/willibrandon/lazynuget/internal/platform"
 )
@@ -22,8 +23,8 @@ type App struct {
 	// platform provides platform detection and utilities
 	platform platform.Platform
 
-	// lifecycle manages application state transitions (to be implemented in US2)
-	lifecycle interface{}
+	// lifecycle manages application state transitions
+	lifecycle *lifecycle.Manager
 
 	// gui is the Bubbletea TUI program (to be implemented in US4)
 	gui interface{}
@@ -40,9 +41,6 @@ type App struct {
 	// startTime is when the application was created
 	startTime time.Time
 
-	// shutdownHandlers are called during graceful shutdown
-	shutdownHandlers []func(context.Context) error
-
 	// guiOnce ensures GUI is initialized only once (lazy initialization)
 	guiOnce sync.Once
 
@@ -54,13 +52,16 @@ type App struct {
 func NewApp(version, commit, date string) (*App, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Create lifecycle manager with 30-second shutdown timeout
+	lifecycleMgr := lifecycle.NewManager(30 * time.Second)
+
 	app := &App{
-		ctx:              ctx,
-		cancel:           cancel,
-		version:          VersionInfo{Version: version, Commit: commit, Date: date},
-		startTime:        time.Now(),
-		shutdownHandlers: make([]func(context.Context) error, 0),
-		phase:            "uninitialized",
+		ctx:       ctx,
+		cancel:    cancel,
+		version:   VersionInfo{Version: version, Commit: commit, Date: date},
+		startTime: time.Now(),
+		lifecycle: lifecycleMgr,
+		phase:     "uninitialized",
 	}
 
 	return app, nil
@@ -72,6 +73,10 @@ func (app *App) Bootstrap() error {
 	// Layer 2 panic recovery: catch panics and add phase context
 	defer func() {
 		if r := recover(); r != nil {
+			// Mark lifecycle as failed
+			if app.lifecycle != nil {
+				app.lifecycle.SetState(lifecycle.StateFailed)
+			}
 			if app.logger != nil {
 				app.logger.Error("PANIC during bootstrap (phase: %s): %v", app.phase, r)
 			}
@@ -80,10 +85,16 @@ func (app *App) Bootstrap() error {
 		}
 	}()
 
+	// Transition to initializing state
+	if err := app.lifecycle.SetState(lifecycle.StateInitializing); err != nil {
+		return fmt.Errorf("failed to enter initializing state: %w", err)
+	}
+
 	// Phase: Config loading
 	app.phase = "config"
 	cfg, err := config.Load()
 	if err != nil {
+		app.lifecycle.SetState(lifecycle.StateFailed)
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 	app.config = cfg
@@ -96,7 +107,13 @@ func (app *App) Bootstrap() error {
 	app.phase = "platform"
 	app.platform = platform.New(app.config, app.logger)
 
+	// Transition to running state
 	app.phase = "ready"
+	if err := app.lifecycle.SetState(lifecycle.StateRunning); err != nil {
+		return fmt.Errorf("failed to enter running state: %w", err)
+	}
+
+	app.logger.Info("Bootstrap complete, application is running")
 	return nil
 }
 
@@ -113,4 +130,59 @@ func (app *App) GetLogger() logging.Logger {
 // GetPlatform returns the platform utilities.
 func (app *App) GetPlatform() platform.Platform {
 	return app.platform
+}
+
+// Run starts the application and waits for shutdown signal
+func (app *App) Run() error {
+	// Verify we're in running state
+	if app.lifecycle.GetState() != lifecycle.StateRunning {
+		return fmt.Errorf("cannot run: application not in running state (current: %s)", app.lifecycle.GetState())
+	}
+
+	app.logger.Info("Application started, waiting for shutdown signal...")
+
+	// Create signal handler
+	signalHandler := lifecycle.NewSignalHandler(app.lifecycle, app.logger)
+
+	// Wait for shutdown signal (this blocks)
+	shutdownCtx := signalHandler.WaitForShutdownSignal(app.ctx)
+
+	// Block until context is cancelled
+	<-shutdownCtx.Done()
+
+	app.logger.Info("Shutdown signal received")
+
+	// Perform graceful shutdown
+	return app.Shutdown()
+}
+
+// Shutdown performs graceful shutdown of all subsystems
+func (app *App) Shutdown() error {
+	app.logger.Info("Beginning graceful shutdown...")
+
+	// Create a fresh context for shutdown (not the cancelled app context)
+	shutdownCtx := context.Background()
+
+	// Execute lifecycle shutdown with all registered handlers
+	if err := app.lifecycle.Shutdown(shutdownCtx, app.logger); err != nil {
+		app.logger.Error("Shutdown completed with errors: %v", err)
+		// Cancel the app context even if shutdown had errors
+		app.cancel()
+		return err
+	}
+
+	// Cancel the application context after successful shutdown
+	app.cancel()
+
+	app.logger.Info("Shutdown complete")
+	return nil
+}
+
+// RegisterShutdownHandler registers a function to be called during shutdown
+func (app *App) RegisterShutdownHandler(name string, priority int, handler func(context.Context) error) {
+	app.lifecycle.RegisterShutdownHandler(lifecycle.ShutdownHandler{
+		Name:     name,
+		Priority: priority,
+		Handler:  handler,
+	})
 }

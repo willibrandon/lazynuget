@@ -388,14 +388,14 @@ func (b *BootstrapApp) Run(ctx context.Context) error {
 	}
 
 	// Now initialize GUI (this is where 80-120ms is spent)
-	gui, err := b.GetOrInitGUI()
+	_, err := b.GetOrInitGUI()
 	if err != nil {
 		return err
 	}
 	b.stopwatch.Mark("gui_initialized")
 
 	// Run the GUI event loop
-	// gui.Run()  // Would be actual implementation
+	// In actual implementation: gui.Run()
 
 	return nil
 }

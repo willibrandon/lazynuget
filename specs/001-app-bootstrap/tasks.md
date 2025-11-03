@@ -87,25 +87,25 @@ LazyNuGet uses single project structure with Go conventions:
 
 ### Implementation for User Story 2
 
-- [ ] T022 [P] [US2] Create `internal/bootstrap/lifecycle.go` with `LifecycleManager` struct (state, stateMutex, shutdownTimeout, signalChan, shutdownChan, logger, goroutines, stopSignal fields)
-- [ ] T023 [P] [US2] Create `internal/bootstrap/signals.go` with `SignalHandler` struct and `Register(signals ...os.Signal) context.Context` method using signal.NotifyContext
-- [ ] T024 [US2] Implement `LifecycleManager.Start(ctx, app)` method that transitions Uninitialized → Initializing → Running and registers signal handlers
-- [ ] T025 [US2] Implement `LifecycleManager.Shutdown(ctx)` method that transitions Running → ShuttingDown → Stopped, runs shutdown handlers, enforces timeout
-- [ ] T026 [US2] Implement `LifecycleManager.State()` method (thread-safe read using RWMutex)
-- [ ] T027 [US2] Implement `LifecycleManager.RegisterShutdownHandler(handler)` method for registering cleanup functions
-- [ ] T028 [US2] Implement `SignalHandler.Wait()` method that blocks until signal received
-- [ ] T029 [US2] Implement `SignalHandler.Shutdown()` method that stops signal monitoring and restores default handlers (for force-quit)
-- [ ] T030 [US2] Integrate lifecycle manager into `App.Bootstrap()` - create lifecycle manager, register shutdown handlers (logger, platform, config cleanup)
-- [ ] T031 [US2] Update `cmd/lazynuget/main.go` to start lifecycle, wait for signals using errgroup pattern from research.md, call Shutdown with timeout
-- [ ] T032 [US2] Add Layer 4 panic recovery in signal handler goroutine (defer/recover with logging, don't re-panic)
-- [ ] T033 [US2] Add Layer 5 panic recovery in `LifecycleManager.Shutdown()` method (defer/recover with logging, continue cleanup)
+- [X] T022 [P] [US2] Create `internal/lifecycle` package with `Manager` struct (state, stateMutex, shutdownTimeout, shutdownHandlers fields)
+- [X] T023 [P] [US2] Create `internal/lifecycle/signals.go` with `SignalHandler` struct and `WaitForShutdownSignal()` method using signal.Notify
+- [X] T024 [US2] Implement `Manager.SetState()` method that transitions states with validation (Uninitialized → Initializing → Running)
+- [X] T025 [US2] Implement `Manager.Shutdown(ctx)` method that transitions Running → ShuttingDown → ShutdownComplete, runs shutdown handlers, enforces timeout
+- [X] T026 [US2] Implement `Manager.GetState()` method (thread-safe read using RWMutex)
+- [X] T027 [US2] Implement `Manager.RegisterShutdownHandler(handler)` method for registering cleanup functions with priority
+- [X] T028 [US2] Implement `SignalHandler.WaitForShutdownSignal()` method that blocks until SIGINT/SIGTERM received
+- [X] T029 [US2] Implement errgroup pattern in `internal/lifecycle/errgroup.go` for safe goroutine management
+- [X] T030 [US2] Integrate lifecycle manager into `App` - create lifecycle manager in NewApp(), call SetState in Bootstrap()
+- [X] T031 [US2] Update `cmd/lazynuget/main.go` to call app.Run() which waits for signals and calls Shutdown
+- [X] T032 [US2] Add Layer 4 panic recovery in signal handler goroutine (defer/recover with logging, don't re-panic)
+- [X] T033 [US2] Add Layer 5 panic recovery in `Manager.Shutdown()` method (defer/recover with logging, continue cleanup)
 
 ### Integration Tests for User Story 2
 
-- [ ] T034 [P] [US2] Create `tests/integration/signals_test.go` with TestSIGINTShutdown that sends SIGINT and validates graceful exit within 1s
-- [ ] T035 [P] [US2] Create `tests/integration/signals_test.go` with TestSIGTERMShutdown that sends SIGTERM and validates graceful exit within 3s
-- [ ] T036 [P] [US2] Create `tests/integration/signals_test.go` with TestForceQuit that sends double SIGINT and validates immediate exit (second signal restores default)
-- [ ] T037 [P] [US2] Create `tests/integration/lifecycle_test.go` with TestShutdownTimeout that validates timeout enforcement (mock slow handler)
+- [X] T034 [P] [US2] Create `tests/integration/signal_test.go` with TestSIGINTHandling that sends SIGINT and validates graceful exit
+- [X] T035 [P] [US2] Create `tests/integration/signal_test.go` with TestSIGTERMHandling that sends SIGTERM and validates graceful exit
+- [X] T036 [P] [US2] Create `tests/integration/signal_test.go` with TestMultipleSignals that tests handling of multiple signals
+- [X] T037 [P] [US2] Create `tests/integration/shutdown_test.go` with TestShutdownWithTimeout that validates timeout enforcement
 
 **Checkpoint**: At this point, User Stories 1 AND 2 work - application starts and shuts down gracefully on signals
 

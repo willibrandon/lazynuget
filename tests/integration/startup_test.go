@@ -2,7 +2,9 @@ package integration
 
 import (
 	"os/exec"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func TestBasicStartup(t *testing.T) {
@@ -13,15 +15,28 @@ func TestBasicStartup(t *testing.T) {
 	}
 	defer exec.Command("rm", "../../lazynuget-test").Run()
 
-	// Run with no arguments (should exit immediately for now since no TUI yet)
+	// Start the application (it will now block waiting for signals)
 	cmd := exec.Command("../../lazynuget-test")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Command failed: %v\nOutput: %s", err, output)
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Failed to start application: %v", err)
 	}
 
-	// Verify exit code is 0 (successful initialization)
+	// Give app time to start
+	time.Sleep(500 * time.Millisecond)
+
+	// Send SIGTERM to trigger graceful shutdown
+	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatalf("Failed to send SIGTERM: %v", err)
+	}
+
+	// Wait for process to exit
+	err := cmd.Wait()
+	if err != nil {
+		t.Errorf("Process exited with error: %v", err)
+	}
+
+	// Verify exit code is 0 (successful initialization and shutdown)
 	if cmd.ProcessState.ExitCode() != 0 {
-		t.Errorf("Expected exit code 0, got: %d\nOutput: %s", cmd.ProcessState.ExitCode(), output)
+		t.Errorf("Expected exit code 0, got: %d", cmd.ProcessState.ExitCode())
 	}
 }

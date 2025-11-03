@@ -56,9 +56,12 @@ func main() {
 		os.Exit(ExitUserError)
 	}
 
-	// For now, just exit successfully after bootstrap
-	// US2 will add lifecycle management and signal handling
-	// US4 will add GUI/TUI support
+	// Run application and wait for shutdown signal
+	if err := app.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
+		os.Exit(ExitSystemError)
+	}
+
 	_ = flags // Flags will be used in US3 and US4
 
 	os.Exit(ExitSuccess)
