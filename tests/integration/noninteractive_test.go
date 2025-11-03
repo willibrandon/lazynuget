@@ -9,15 +9,12 @@ import (
 )
 
 func TestNonInteractiveFlagExplicit(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application with --non-interactive flag
-	cmd := exec.Command("../../lazynuget-test", "--non-interactive")
+	cmd := exec.Command(binaryPath, "--non-interactive")
 	outputPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("Failed to get stdout pipe: %v", err)
@@ -62,15 +59,12 @@ func TestNonInteractiveFlagExplicit(t *testing.T) {
 }
 
 func TestNonInteractiveTTYDetection(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Use echo to pipe stdin (simulates piped input)
-	cmd := exec.Command("sh", "-c", "echo | ../../lazynuget-test 2>&1")
+	cmd := exec.Command("sh", "-c", "echo | "+binaryPath+" 2>&1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Non-zero exit is acceptable if it's a controlled shutdown
@@ -93,15 +87,12 @@ func TestNonInteractiveTTYDetection(t *testing.T) {
 }
 
 func TestCIEnvironmentDetection(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application with CI environment variable set
-	cmd := exec.Command("../../lazynuget-test")
+	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(), "CI=true")
 
 	outputPipe, err := cmd.StdoutPipe()
@@ -138,17 +129,14 @@ func TestCIEnvironmentDetection(t *testing.T) {
 }
 
 func TestStartupPerformance(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Measure startup time in non-interactive mode
 	start := time.Now()
 
-	cmd := exec.Command("../../lazynuget-test", "--non-interactive")
+	cmd := exec.Command(binaryPath, "--non-interactive")
 	if err := cmd.Run(); err != nil {
 		// Accept exit codes 0-2 (success or controlled errors)
 		if cmd.ProcessState.ExitCode() > 2 {
@@ -174,15 +162,12 @@ func TestStartupPerformance(t *testing.T) {
 }
 
 func TestDumbTerminalDetection(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application with TERM=dumb
-	cmd := exec.Command("../../lazynuget-test")
+	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(), "TERM=dumb")
 
 	outputPipe, err := cmd.StdoutPipe()

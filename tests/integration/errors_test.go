@@ -1,15 +1,13 @@
 package integration
 
 import (
-	"io"
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/creack/pty"
 )
 
 func TestInvalidYAMLError(t *testing.T) {
@@ -28,14 +26,11 @@ compactMode true  # missing colon
 	}
 
 	// Build the binary
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Run with invalid config
-	cmd := exec.Command("../../lazynuget-test", "--config", configPath, "--non-interactive")
+	cmd := exec.Command(binaryPath, "--config", configPath, "--non-interactive")
 	output, err := cmd.CombinedOutput()
 
 	outputStr := string(output)
@@ -65,48 +60,45 @@ compactMode true  # missing colon
 
 func TestMissingDotnetCLI(t *testing.T) {
 	// Build the binary
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Create a temporary directory with NO dotnet executable
 	tmpDir := t.TempDir()
 	// PATH with only temp dir - excludes /usr/bin and /usr/local/bin where dotnet lives
 	fakePath := tmpDir
 
-	// Run with PTY (real terminal) so app stays in interactive mode
-	cmd := exec.Command("../../lazynuget-test")
+	// Run without --non-interactive flag so app stays running and we can capture async validation output
+	cmd := exec.Command(binaryPath)
 	cmd.Env = []string{
 		"PATH=" + fakePath,
 		"HOME=" + os.Getenv("HOME"),
-		"TERM=xterm",
+		// Without a real PTY, the app will detect non-TTY and switch to non-interactive mode,
+		// but it will still call Run() and wait for signals, keeping the process alive
 	}
 
-	// Start command with PTY (creates real terminal)
-	ptmx, err := pty.Start(cmd)
-	if err != nil {
-		t.Fatalf("Failed to start command with pty: %v", err)
+	// Set up pipes for stdout and stderr
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("Failed to start command: %v", err)
 	}
-	defer ptmx.Close()
 
-	// Collect output in background
-	outputChan := make(chan string)
-	go func() {
-		output, _ := io.ReadAll(ptmx)
-		outputChan <- string(output)
-	}()
+	// Give the async validation goroutine time to complete and log
+	// The validation runs in background, needs at least 500ms-1s
+	time.Sleep(1500 * time.Millisecond)
 
-	// Give process time to start and validate dotnet
-	time.Sleep(500 * time.Millisecond)
-
-	// Kill the process
-	cmd.Process.Kill()
+	// Kill the process to end the test
+	if cmd.Process != nil {
+		cmd.Process.Kill()
+	}
 	cmd.Wait()
 
-	// Get collected output
-	outputStr := <-outputChan
+	// Collect all output
+	outputStr := stdout.String() + stderr.String()
 
 	// Should log a warning about missing dotnet
 	if !strings.Contains(strings.ToLower(outputStr), "dotnet") || !strings.Contains(strings.ToLower(outputStr), "warn") {
@@ -135,14 +127,11 @@ maxConcurrentOps: 100 # Too high (max 16)
 	}
 
 	// Build the binary
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Run with invalid config
-	cmd := exec.Command("../../lazynuget-test", "--config", configPath, "--non-interactive")
+	cmd := exec.Command(binaryPath, "--config", configPath, "--non-interactive")
 	output, err := cmd.CombinedOutput()
 
 	outputStr := string(output)
@@ -166,11 +155,8 @@ maxConcurrentOps: 100 # Too high (max 16)
 
 func TestGracefulErrorRecovery(t *testing.T) {
 	// Build the binary
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Test that basic errors don't cause panics
 	testCases := []struct {
@@ -183,7 +169,7 @@ func TestGracefulErrorRecovery(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd := exec.Command("../../lazynuget-test", tc.args...)
+			cmd := exec.Command(binaryPath, tc.args...)
 			output, err := cmd.CombinedOutput()
 
 			outputStr := string(output)

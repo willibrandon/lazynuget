@@ -9,15 +9,12 @@ import (
 )
 
 func TestSIGINTHandling(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application
-	cmd := exec.Command("../../lazynuget-test")
+	cmd := exec.Command(binaryPath)
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Failed to start application: %v", err)
 	}
@@ -55,15 +52,12 @@ func TestSIGINTHandling(t *testing.T) {
 }
 
 func TestSIGTERMHandling(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application
-	cmd := exec.Command("../../lazynuget-test")
+	cmd := exec.Command(binaryPath)
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Failed to start application: %v", err)
 	}
@@ -101,15 +95,12 @@ func TestSIGTERMHandling(t *testing.T) {
 }
 
 func TestMultipleSignals(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application
-	cmd := exec.Command("../../lazynuget-test")
+	cmd := exec.Command(binaryPath)
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Failed to start application: %v", err)
 	}
@@ -149,15 +140,12 @@ func TestMultipleSignals(t *testing.T) {
 }
 
 func TestShutdownLogsPresent(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Start the application and capture output
-	cmd := exec.Command("../../lazynuget-test")
+	cmd := exec.Command(binaryPath)
 	outputPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("Failed to get stdout pipe: %v", err)

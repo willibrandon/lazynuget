@@ -188,7 +188,16 @@ func (app *App) Run() error {
 	// Wait for shutdown signal (this blocks)
 	shutdownCtx := signalHandler.WaitForShutdownSignal(app.ctx)
 
-	// Block until context is cancelled
+	// In non-interactive mode, exit after a brief delay to allow async operations to complete
+	if !app.runMode.IsInteractive() {
+		go func() {
+			time.Sleep(200 * time.Millisecond)
+			app.logger.Info("Non-interactive mode: triggering automatic shutdown")
+			app.cancel() // Trigger shutdown
+		}()
+	}
+
+	// Block until context is cancelled (either by signal or by auto-shutdown in non-interactive mode)
 	<-shutdownCtx.Done()
 
 	app.logger.Info("Shutdown signal received")

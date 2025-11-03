@@ -7,15 +7,12 @@ import (
 )
 
 func TestHelpFlag(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
+	// Build the binary
+	binaryPath := buildTestBinary(t)
+	defer cleanupBinary(binaryPath)
 
 	// Run with --help flag
-	cmd := exec.Command("../../lazynuget-test", "--help")
+	cmd := exec.Command(binaryPath, "--help")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Command failed: %v\nOutput: %s", err, output)

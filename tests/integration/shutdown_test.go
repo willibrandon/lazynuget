@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -139,13 +138,6 @@ func TestShutdownWithTimeout(t *testing.T) {
 }
 
 func TestShutdownStateTransitions(t *testing.T) {
-	// Build the binary first
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-test", "../../cmd/lazynuget/main.go")
-	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-	defer exec.Command("rm", "../../lazynuget-test").Run()
-
 	// This test verifies that the application goes through proper state transitions
 	// We do this by testing in-process
 	app, err := bootstrap.NewApp("test", "test", "test")
