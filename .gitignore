@@ -3,6 +3,7 @@
 
 # Claude AI
 .claude/
+CLAUDE.md
 
 # Go
 *.exe
