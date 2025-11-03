@@ -404,3 +404,14 @@ func GetConfigSchema() *ConfigSchema {
 		},
 	}
 }
+
+// IsHotReloadable returns whether a setting can be reloaded without restart.
+// This method checks the schema to determine if a given setting supports hot-reload.
+// See: FR-049
+func (cs *ConfigSchema) IsHotReloadable(settingPath string) bool {
+	if setting, exists := cs.Settings[settingPath]; exists {
+		return setting.HotReloadable
+	}
+	// If setting not found in schema, assume not hot-reloadable (safe default)
+	return false
+}

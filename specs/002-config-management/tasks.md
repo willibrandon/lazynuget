@@ -203,30 +203,30 @@ LazyNuGet is a single project with the following structure:
 
 ### Tests for User Story 5
 
-- [ ] T089 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying hot-reload disabled by default per FR-043
-- [ ] T090 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying config change detected within 3 seconds when hot-reload enabled per FR-045
-- [ ] T091 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying invalid reload keeps previous config per FR-047
-- [ ] T092 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying hot-reload success notification per FR-048
-- [ ] T093 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying hot-reload failure notification per FR-048
-- [ ] T094 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying config file deletion triggers fallback to defaults per edge cases
-- [ ] T095 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying rapid successive writes debounced properly
+- [x] T089 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying hot-reload disabled by default per FR-043
+- [x] T090 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying config change detected within 3 seconds when hot-reload enabled per FR-045
+- [x] T091 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying invalid reload keeps previous config per FR-047
+- [x] T092 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying hot-reload success notification per FR-048
+- [x] T093 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying hot-reload failure notification per FR-048
+- [x] T094 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying config file deletion triggers fallback to defaults per edge cases
+- [x] T095 [P] [US5] Create integration test in tests/integration/config_hot_reload_test.go verifying rapid successive writes debounced properly
 
 ### Implementation for User Story 5
 
-- [ ] T096 [P] [US5] Define ConfigWatcher interface in internal/config/watcher.go per contracts/watcher.md
-- [ ] T097 [P] [US5] Define WatchOptions struct in internal/config/watcher.go per contracts/watcher.md
-- [ ] T098 [P] [US5] Define ConfigChangeEvent and ConfigChangeType in internal/config/watcher.go per contracts/watcher.md
-- [ ] T099 [US5] Implement configWatcher struct in internal/config/watcher.go using fsnotify
-- [ ] T100 [US5] Implement Watch() method in internal/config/watcher.go starting background goroutine per contract
-- [ ] T101 [US5] Implement file event handling in internal/config/watcher.go for Write/Modify/Delete/Rename per contract
-- [ ] T102 [US5] Implement 100ms debounce logic in internal/config/watcher.go per FR-044 and contract
-- [ ] T103 [US5] Implement reload validation in internal/config/watcher.go calling Load() and Validate() per FR-046
-- [ ] T104 [US5] Implement callback invocation in internal/config/watcher.go for OnReload/OnError/OnFileDeleted per contract
-- [ ] T105 [US5] Implement Stop() method in internal/config/watcher.go releasing resources per contract
-- [ ] T106 [US5] Implement hot-reloadable flag checking in internal/config/schema.go per FR-049
-- [ ] T107 [US5] Update schema definitions in internal/config/schema.go marking which settings are hot-reloadable
-- [ ] T108 [US5] Add integration with application in internal/bootstrap/app.go to start watcher when hotReload: true
-- [ ] T109 [US5] Verify T089-T095 tests now pass with hot-reload implementation
+- [x] T096 [P] [US5] Define ConfigWatcher interface in internal/config/watcher.go per contracts/watcher.md
+- [x] T097 [P] [US5] Define WatchOptions struct in internal/config/watcher.go per contracts/watcher.md
+- [x] T098 [P] [US5] Define ConfigChangeEvent and ConfigChangeType in internal/config/watcher.go per contracts/watcher.md
+- [x] T099 [US5] Implement configWatcher struct in internal/config/watcher.go using fsnotify
+- [x] T100 [US5] Implement Watch() method in internal/config/watcher.go starting background goroutine per contract
+- [x] T101 [US5] Implement file event handling in internal/config/watcher.go for Write/Modify/Delete/Rename per contract
+- [x] T102 [US5] Implement 100ms debounce logic in internal/config/watcher.go per FR-044 and contract
+- [x] T103 [US5] Implement reload validation in internal/config/watcher.go calling Load() and Validate() per FR-046
+- [x] T104 [US5] Implement callback invocation in internal/config/watcher.go for OnReload/OnError/OnFileDeleted per contract
+- [x] T105 [US5] Implement Stop() method in internal/config/watcher.go releasing resources per contract
+- [x] T106 [US5] Implement hot-reloadable flag checking in internal/config/schema.go per FR-049
+- [x] T107 [US5] Update schema definitions in internal/config/schema.go marking which settings are hot-reloadable
+- [x] T108 [US5] Add integration with application in internal/bootstrap/app.go to start watcher when hotReload: true
+- [x] T109 [US5] Verify T089-T095 tests now pass with hot-reload implementation
 
 **Checkpoint**: All five user stories fully functional - complete configuration system
 

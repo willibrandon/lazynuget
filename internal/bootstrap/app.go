@@ -16,18 +16,22 @@ import (
 
 // App represents the running LazyNuGet application instance.
 type App struct {
-	startTime time.Time
-	logger    logging.Logger
-	platform  platform.Platform
-	gui       any
-	ctx       context.Context
-	config    *config.Config
-	lifecycle *lifecycle.Manager
-	cancel    context.CancelFunc
-	version   VersionInfo
-	phase     string
-	runMode   platform.RunMode
-	guiOnce   sync.Once
+	startTime    time.Time
+	logger       logging.Logger
+	platform     platform.Platform
+	gui          any
+	ctx          context.Context
+	config       *config.Config
+	configMu     sync.RWMutex
+	configPath   string
+	configLoader config.ConfigLoader
+	watcher      config.ConfigWatcher
+	lifecycle    *lifecycle.Manager
+	cancel       context.CancelFunc
+	version      VersionInfo
+	phase        string
+	runMode      platform.RunMode
+	guiOnce      sync.Once
 }
 
 // NewApp creates a new application instance with version information.
@@ -103,6 +107,8 @@ func (app *App) Bootstrap(flags *Flags) error {
 		return fmt.Errorf("configuration loading failed: %w", err)
 	}
 	app.config = cfg
+	app.configLoader = loader
+	app.configPath = loadOpts.ConfigFilePath
 
 	// Phase: Logging setup
 	app.phase = "logging"
@@ -138,6 +144,68 @@ func (app *App) Bootstrap(flags *Flags) error {
 		}
 	}()
 
+	// Phase: Hot-reload watcher setup (if enabled)
+	app.phase = "hot-reload"
+	if app.config.HotReload && app.configPath != "" {
+		app.logger.Info("Hot-reload enabled, starting config file watcher")
+
+		watcher, err := config.NewConfigWatcher(config.WatchOptions{
+			ConfigFilePath: app.configPath,
+			LoadOptions:    loadOpts,
+			OnReload: func(newCfg *config.Config) {
+				app.configMu.Lock()
+				app.config = newCfg
+				app.configMu.Unlock()
+				app.logger.Info("Configuration reloaded successfully")
+			},
+			OnError: func(err error) {
+				app.logger.Error("Configuration reload failed: %v", err)
+			},
+			OnFileDeleted: func() {
+				app.logger.Warn("Configuration file deleted, using previous configuration")
+			},
+		}, loader)
+
+		if err != nil {
+			app.logger.Warn("Failed to start config file watcher: %v", err)
+		} else {
+			app.watcher = watcher
+
+			// Start watching in background
+			eventCh, errCh, err := watcher.Watch(app.ctx)
+			if err != nil {
+				app.logger.Warn("Failed to start watching config file: %v", err)
+			} else {
+				// Consume events in background goroutine
+				go func() {
+					for {
+						select {
+						case <-app.ctx.Done():
+							return
+						case event := <-eventCh:
+							app.logger.Debug("Config change event: type=%s, error=%v", event.Type, event.Error)
+						case err := <-errCh:
+							app.logger.Error("Config watcher error: %v", err)
+						}
+					}
+				}()
+
+				// Register shutdown handler to stop watcher
+				app.RegisterShutdownHandler("config-watcher", 100, func(ctx context.Context) error {
+					if app.watcher != nil {
+						app.logger.Debug("Stopping config file watcher")
+						return app.watcher.Stop()
+					}
+					return nil
+				})
+
+				app.logger.Debug("Config file watcher started successfully")
+			}
+		}
+	} else if app.config.HotReload && app.configPath == "" {
+		app.logger.Debug("Hot-reload enabled but no config file path available (using defaults)")
+	}
+
 	// Transition to running state
 	app.phase = "ready"
 	if err := app.lifecycle.SetState(lifecycle.StateRunning); err != nil {
@@ -149,7 +217,10 @@ func (app *App) Bootstrap(flags *Flags) error {
 }
 
 // GetConfig returns the application configuration.
+// Thread-safe: uses RLock to allow concurrent reads while hot-reload updates happen.
 func (app *App) GetConfig() *config.Config {
+	app.configMu.RLock()
+	defer app.configMu.RUnlock()
 	return app.config
 }
 
