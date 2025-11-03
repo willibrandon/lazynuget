@@ -33,7 +33,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/yourusername/lazynuget/internal/config"
+	"os"
+
+	"github.com/willibrandon/lazynuget/internal/config"
 )
 
 func main() {
@@ -66,13 +68,13 @@ package main
 
 import (
 	"context"
-	"github.com/yourusername/lazynuget/internal/config"
-	"github.com/yourusername/lazynuget/internal/logging"
+	"github.com/willibrandon/lazynuget/internal/config"
+	"github.com/willibrandon/lazynuget/internal/logging"
 )
 
 func main() {
 	ctx := context.Background()
-	logger := logging.New() // Your application logger
+	logger := logging.New("info", "") // Create logger (empty path = stdout only)
 
 	loader := config.NewLoader()
 
@@ -301,7 +303,7 @@ cfg, err := loader.Load(ctx, config.LoadOptions{
 
 ```bash
 # Override log level temporarily
-./lazynuget --log-level=trace
+./lazynuget --log-level=debug
 
 # Use custom config file
 ./lazynuget --config=/custom/config.yml
@@ -438,19 +440,17 @@ package main
 
 import (
 	"context"
-	"github.com/yourusername/lazynuget/internal/config"
+	"fmt"
+	"github.com/willibrandon/lazynuget/internal/config"
 )
 
 func encryptValue(plaintext string, keyID string) {
 	ctx := context.Background()
-	encryptor := config.NewEncryptor()
 
-	// Encrypt the value
-	encrypted, err := encryptor.Encrypt(ctx, plaintext, keyID)
-	if err != nil {
-		fmt.Printf("Encryption failed: %v\n", err)
-		return
-	}
+	// Create encryptor with keychain and key derivation
+	keychain := config.NewKeychainManager()
+	keyDerivation := config.NewKeyDerivation()
+	encryptor := config.NewEncryptor(keychain, keyDerivation)
 
 	// Convert to string format for config file
 	encryptedStr, err := encryptor.EncryptToString(ctx, plaintext, keyID)
@@ -488,18 +488,23 @@ package main
 
 import (
 	"context"
-	"github.com/yourusername/lazynuget/internal/config"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/willibrandon/lazynuget/internal/config"
+	"github.com/willibrandon/lazynuget/internal/logging"
 )
 
 func main() {
 	ctx := context.Background()
 	loader := config.NewLoader()
-	logger := logging.New()
+	logger := logging.New("info", "")
 
 	// Load initial config
 	cfg, err := loader.Load(ctx, config.LoadOptions{Logger: logger})
 	if err != nil {
-		logger.Error("Config load failed", "error", err)
+		logger.Error("Config load failed: %v", err)
 		os.Exit(1)
 	}
 
@@ -510,53 +515,61 @@ func main() {
 		return
 	}
 
-	// Start file watcher for hot-reload
-	watcher := config.NewWatcher()
-
-	err = watcher.Watch(ctx, config.WatchOptions{
+	// Create file watcher for hot-reload with callbacks
+	watcher, err := config.NewConfigWatcher(config.WatchOptions{
 		ConfigFilePath: cfg.LoadedFrom,
-		Loader:         loader,
+		LoadOptions:    config.LoadOptions{Logger: logger},
+		DebounceDelay:  100 * time.Millisecond, // Wait 100ms after last change
 
 		OnReload: func(newConfig *config.Config) {
-			logger.Info("Config reloaded successfully", "timestamp", newConfig.LoadedAt)
-
+			logger.Info("Config reloaded successfully")
 			// Apply new config to application
 			// NOTE: Some settings may require restart (flagged as non-hot-reloadable)
-			app.UpdateConfig(newConfig)
-
-			// Notify user
-			app.ShowNotification("Configuration reloaded successfully")
 		},
 
-		OnError: func(errors []config.ValidationError) {
-			logger.Warn("Config reload failed validation, keeping previous config")
-			for _, e := range errors {
-				logger.Warn("Validation error", "key", e.Key, "constraint", e.Constraint)
-			}
-
-			// Notify user
-			app.ShowErrorNotification("Config reload failed: " + errors[0].Constraint)
+		OnError: func(err error) {
+			logger.Warn("Config reload failed: %v", err)
+			// Keep previous config when reload fails
 		},
 
 		OnFileDeleted: func() {
 			logger.Warn("Config file deleted, falling back to defaults")
-
 			// Fall back to defaults
-			defaultCfg := loader.GetDefaults()
-			app.UpdateConfig(defaultCfg)
-
-			// Notify user
-			app.ShowWarningNotification("Config file deleted, using defaults")
 		},
-
-		DebounceInterval: 100 * time.Millisecond, // Wait 100ms after last change
-		Logger:           logger,
-	})
+	}, loader)
 
 	if err != nil {
-		logger.Error("Failed to start config watcher", "error", err)
+		logger.Error("Failed to create config watcher: %v", err)
 		// Continue without hot-reload (not fatal)
+		return
 	}
+
+	// Start watching for changes
+	eventCh, errCh, err := watcher.Watch(ctx)
+	if err != nil {
+		logger.Error("Failed to start watcher: %v", err)
+		return
+	}
+
+	// Process events in background goroutine
+	go func() {
+		for {
+			select {
+			case event, ok := <-eventCh:
+				if !ok {
+					return
+				}
+				// Event has NewConfig, Type, Timestamp, Error fields
+				logger.Info("Config change detected: %s", event.Type)
+
+			case err, ok := <-errCh:
+				if !ok {
+					return
+				}
+				logger.Error("Watcher error: %v", err)
+			}
+		}
+	}()
 
 	// Application runs with hot-reload enabled
 	// Watcher goroutine monitors config file in background
@@ -585,7 +598,7 @@ func main() {
 cfg := &config.Config{
 	Theme: "invalid-theme", // Will fail validation
 	MaxConcurrentOps: 999,  // Out of range [1, 16]
-	LogLevel: "trace",      // Valid
+	LogLevel: "debug",      // Valid
 }
 
 errors, err := loader.Validate(ctx, cfg)

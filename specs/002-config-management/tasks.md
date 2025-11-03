@@ -284,13 +284,13 @@ LazyNuGet is a single project with the following structure:
 - [x] T143 Add unit tests for env var parsing in internal/config/env_test.go with table-driven tests
 - [x] T144 Add unit tests for YAML parser in internal/config/parser_yaml_test.go
 - [x] T145 Add unit tests for TOML parser in internal/config/parser_toml_test.go
-- [ ] T146 Run quickstart.md examples manually to verify all code samples work
-- [ ] T147 Update quickstart.md with any corrections from manual validation
-- [ ] T148 Run full integration test suite and verify >80% code coverage target
-- [ ] T149 Test on Windows, macOS, and Linux platforms verifying cross-platform behavior per Constitution Principle IV
-- [ ] T150 Verify startup config load completes in <500ms per performance goal
-- [ ] T151 Verify hot-reload latency <3s per FR-045
-- [ ] T152 Verify config file parsing <100ms for typical files per SC-010
+- [x] T146 Run quickstart.md examples manually to verify all code samples work
+- [x] T147 Update quickstart.md with any corrections from manual validation
+- [x] T148 Run full integration test suite and verify >80% code coverage target
+- [x] T149 Test on Windows, macOS, and Linux platforms verifying cross-platform behavior per Constitution Principle IV
+- [x] T150 Verify startup config load completes in <500ms per performance goal
+- [x] T151 Verify hot-reload latency <3s per FR-045
+- [x] T152 Verify config file parsing <100ms for typical files per SC-010
 
 ---
 

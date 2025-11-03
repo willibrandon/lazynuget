@@ -57,13 +57,16 @@ type WatchOptions struct {
 
 // configWatcher implements ConfigWatcher using fsnotify.
 type configWatcher struct {
-	loader     ConfigLoader
-	watcher    *fsnotify.Watcher
-	stopCh     chan struct{}
-	stoppedCh  chan struct{}
-	lastConfig *Config
-	opts       WatchOptions
-	mu         sync.Mutex
+	loader         ConfigLoader
+	watchCtx       context.Context
+	watcher        *fsnotify.Watcher
+	lastConfig     *Config
+	watchCtxCancel context.CancelFunc
+	stopCh         chan struct{}
+	stoppedCh      chan struct{}
+	opts           WatchOptions
+	callbacksWg    sync.WaitGroup
+	mu             sync.Mutex
 }
 
 // NewConfigWatcher creates a new config file watcher.
@@ -97,12 +100,16 @@ func NewConfigWatcher(opts WatchOptions, loader ConfigLoader) (ConfigWatcher, er
 		return nil, fmt.Errorf("failed to watch config file: %w", err)
 	}
 
+	watchCtx, watchCtxCancel := context.WithCancel(context.Background())
+
 	return &configWatcher{
-		opts:      opts,
-		loader:    loader,
-		watcher:   fsWatcher,
-		stopCh:    make(chan struct{}),
-		stoppedCh: make(chan struct{}),
+		opts:           opts,
+		loader:         loader,
+		watcher:        fsWatcher,
+		stopCh:         make(chan struct{}),
+		stoppedCh:      make(chan struct{}),
+		watchCtx:       watchCtx,
+		watchCtxCancel: watchCtxCancel,
 	}, nil
 }
 
@@ -118,13 +125,20 @@ func (cw *configWatcher) Watch(ctx context.Context) (<-chan ConfigChangeEvent, <
 
 // watchLoop is the main event processing loop
 func (cw *configWatcher) watchLoop(ctx context.Context, eventCh chan<- ConfigChangeEvent, errCh chan<- error) {
-	defer close(cw.stoppedCh)
-	defer close(eventCh)
-	defer close(errCh)
-
 	// Debounce timer (T102)
 	var debounceTimer *time.Timer
-	var pendingEvent fsnotify.Event
+
+	defer func() {
+		// Stop timer if it exists
+		if debounceTimer != nil {
+			debounceTimer.Stop()
+		}
+		// Wait for any in-flight timer callbacks to complete
+		cw.callbacksWg.Wait()
+		close(eventCh)
+		close(errCh)
+		close(cw.stoppedCh)
+	}()
 
 	for {
 		select {
@@ -141,10 +155,21 @@ func (cw *configWatcher) watchLoop(ctx context.Context, eventCh chan<- ConfigCha
 			if debounceTimer != nil {
 				debounceTimer.Stop()
 			}
-			pendingEvent = event
 
+			// Capture event for closure to avoid data race
+			eventToHandle := event
 			debounceTimer = time.AfterFunc(cw.opts.DebounceDelay, func() {
-				cw.handleFileEvent(ctx, pendingEvent, eventCh, errCh)
+				// Track this callback
+				cw.callbacksWg.Add(1)
+				defer cw.callbacksWg.Done()
+
+				// Check if watcher is still running before sending to channels
+				select {
+				case <-cw.watchCtx.Done():
+					return // Watcher stopped, don't send to closed channels
+				default:
+					cw.handleFileEvent(ctx, eventToHandle, eventCh, errCh)
+				}
 			})
 
 		case err, ok := <-cw.watcher.Errors:
@@ -217,6 +242,9 @@ func (cw *configWatcher) handleFileEvent(ctx context.Context, event fsnotify.Eve
 
 // Stop implements ConfigWatcher.Stop() (T105)
 func (cw *configWatcher) Stop() error {
+	// Cancel the watch context to signal timer callbacks to stop
+	cw.watchCtxCancel()
+
 	close(cw.stopCh)
 	<-cw.stoppedCh
 
