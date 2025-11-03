@@ -99,28 +99,28 @@ LazyNuGet is a single project with the following structure:
 
 ### Tests for User Story 2
 
-- [ ] T033 [P] [US2] Create tests/fixtures/configs/valid.yml with sample YAML config covering all setting categories
-- [ ] T034 [P] [US2] Create tests/fixtures/configs/valid.toml with sample TOML config covering all setting categories
-- [ ] T035 [P] [US2] Create tests/fixtures/configs/invalid_syntax.yml with intentional YAML syntax error
-- [ ] T036 [P] [US2] Create tests/fixtures/configs/out_of_range.yml with semantic validation errors (maxConcurrentOps: 999)
-- [ ] T037 [P] [US2] Create tests/fixtures/configs/unknown_keys.yml with unsupported config keys
-- [ ] T038 [P] [US2] Create tests/fixtures/configs/both_formats/ directory with both .yml and .toml files
-- [ ] T039 [US2] Create integration test in tests/integration/config_file_test.go verifying YAML config file loads and overrides defaults
-- [ ] T040 [US2] Create integration test in tests/integration/config_file_test.go verifying TOML config file loads and overrides defaults
-- [ ] T041 [US2] Create integration test in tests/integration/config_file_test.go verifying syntax error blocks startup per FR-010
-- [ ] T042 [US2] Create integration test in tests/integration/config_file_test.go verifying semantic errors fallback to defaults per FR-012
-- [ ] T043 [US2] Create integration test in tests/integration/config_file_test.go verifying both formats present triggers error per FR-005
+- [X] T033 [P] [US2] Create tests/fixtures/configs/valid.yml with sample YAML config covering all setting categories
+- [X] T034 [P] [US2] Create tests/fixtures/configs/valid.toml with sample TOML config covering all setting categories
+- [X] T035 [P] [US2] Create tests/fixtures/configs/invalid_syntax.yml with intentional YAML syntax error
+- [X] T036 [P] [US2] Create tests/fixtures/configs/out_of_range.yml with semantic validation errors (maxConcurrentOps: 999)
+- [X] T037 [P] [US2] Create tests/fixtures/configs/unknown_keys.yml with unsupported config keys
+- [X] T038 [P] [US2] Create tests/fixtures/configs/both_formats/ directory with both .yml and .toml files
+- [X] T039 [US2] Create integration test in tests/integration/config_file_test.go verifying YAML config file loads and overrides defaults
+- [X] T040 [US2] Create integration test in tests/integration/config_file_test.go verifying TOML config file loads and overrides defaults
+- [X] T041 [US2] Create integration test in tests/integration/config_file_test.go verifying syntax error blocks startup per FR-010
+- [X] T042 [US2] Create integration test in tests/integration/config_file_test.go verifying semantic errors fallback to defaults per FR-012
+- [X] T043 [US2] Create integration test in tests/integration/config_file_test.go verifying both formats present triggers error per FR-005
 
 ### Implementation for User Story 2
 
-- [ ] T044 [P] [US2] Implement YAML parser in internal/config/parser_yaml.go using gopkg.in/yaml.v3 per FR-003
-- [ ] T045 [P] [US2] Implement TOML parser in internal/config/parser_toml.go using github.com/BurntSushi/toml per FR-004
-- [ ] T046 [US2] Implement format detection in internal/config/parser.go checking for .yml/.yaml/.toml extensions
-- [ ] T047 [US2] Implement file size validation in internal/config/parser.go rejecting files >10MB per FR-009
-- [ ] T048 [US2] Implement check for multiple formats in internal/config/parser.go per FR-005
-- [ ] T049 [US2] Implement parseConfigFile() in internal/config/parser.go handling syntax errors with line numbers per FR-010
-- [ ] T050 [US2] Update Load() method in internal/config/config.go to detect and load config file if present
-- [ ] T051 [US2] Implement mergeConfigs() in internal/config/merger.go merging file config with defaults per FR-002
+- [X] T044 [P] [US2] Implement YAML parser in internal/config/parser_yaml.go using gopkg.in/yaml.v3 per FR-003
+- [X] T045 [P] [US2] Implement TOML parser in internal/config/parser_toml.go using github.com/BurntSushi/toml per FR-004
+- [X] T046 [US2] Implement format detection in internal/config/parser.go checking for .yml/.yaml/.toml extensions
+- [X] T047 [US2] Implement file size validation in internal/config/parser.go rejecting files >10MB per FR-009
+- [X] T048 [US2] Implement check for multiple formats in internal/config/parser.go per FR-005
+- [X] T049 [US2] Implement parseConfigFile() in internal/config/parser.go handling syntax errors with line numbers per FR-010
+- [X] T050 [US2] Update Load() method in internal/config/config.go to detect and load config file if present
+- [X] T051 [US2] Implement mergeConfigs() in internal/config/merger.go merging file config with defaults per FR-002
 - [ ] T052 [US2] Implement validation rules for all setting types in internal/config/validator.go per data-model.md validation rules
 - [ ] T053 [US2] Add constraint validators (range, enum, hexcolor, dateformat, regex) in internal/config/validator.go
 - [ ] T054 [US2] Update Validate() to collect semantic validation errors in internal/config/validator.go per FR-011
