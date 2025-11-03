@@ -1,0 +1,124 @@
+name: Performance
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run weekly on Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+jobs:
+  benchmark:
+    name: Startup Performance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build binary
+        run: make build
+
+      - name: Install hyperfine
+        run: |
+          wget https://github.com/sharkdp/hyperfine/releases/download/v1.18.0/hyperfine_1.18.0_amd64.deb
+          sudo dpkg -i hyperfine_1.18.0_amd64.deb
+
+      - name: Benchmark startup time
+        run: |
+          hyperfine --warmup 3 --min-runs 50 \
+            --export-markdown startup-bench.md \
+            --export-json startup-bench.json \
+            './lazynuget --version'
+
+      - name: Display results
+        run: cat startup-bench.md
+
+      - name: Check performance target
+        run: |
+          # Extract mean time in milliseconds
+          MEAN_MS=$(jq -r '.results[0].mean * 1000' startup-bench.json)
+          TARGET_MS=200
+
+          echo "Mean startup time: ${MEAN_MS}ms"
+          echo "Target: <${TARGET_MS}ms"
+
+          # Use bc for float comparison
+          if (( $(echo "$MEAN_MS < $TARGET_MS" | bc -l) )); then
+            echo "✓ Performance target met"
+          else
+            echo "⚠ Performance target exceeded by $(echo "$MEAN_MS - $TARGET_MS" | bc)ms"
+            echo "This is a warning, not a failure"
+          fi
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: startup-benchmark
+          path: |
+            startup-bench.md
+            startup-bench.json
+
+  memory:
+    name: Memory Usage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run leak test
+        run: go test -v -run TestResourceLeakDetection ./tests/integration/
+
+      - name: Build with profiling
+        run: go build -o lazynuget-prof ./cmd/lazynuget
+
+      - name: Memory profile
+        run: |
+          # Run with memory profiling
+          ./lazynuget-prof --version &
+          PID=$!
+          sleep 1
+
+          # Capture memory stats (Linux-specific)
+          if command -v pmap &> /dev/null; then
+            pmap -x $PID | tail -1
+          fi
+
+          wait $PID
+
+      - name: Report memory usage
+        run: |
+          # Run and measure resident memory
+          RSS=$(ps -o rss= -p $(./lazynuget --version & echo $!; wait) 2>/dev/null || echo "N/A")
+          if [ "$RSS" != "N/A" ]; then
+            RSS_MB=$((RSS / 1024))
+            echo "Peak RSS: ${RSS_MB}MB"
+            if [ $RSS_MB -lt 50 ]; then
+              echo "✓ Memory target met (<50MB)"
+            else
+              echo "⚠ Memory usage: ${RSS_MB}MB (target: <50MB)"
+            fi
+          fi

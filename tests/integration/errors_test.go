@@ -1,11 +1,15 @@
 package integration
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/creack/pty"
 )
 
 func TestInvalidYAMLError(t *testing.T) {
@@ -67,42 +71,50 @@ func TestMissingDotnetCLI(t *testing.T) {
 	}
 	defer exec.Command("rm", "../../lazynuget-test").Run()
 
-	// Run with PATH cleared (dotnet not available)
-	cmd := exec.Command("../../lazynuget-test", "--non-interactive")
-	cmd.Env = []string{"HOME=" + os.Getenv("HOME")} // Keep HOME but remove PATH
+	// Create a temporary directory with NO dotnet executable
+	tmpDir := t.TempDir()
+	fakePath := tmpDir + ":/usr/bin:/bin" // Add minimal PATH without dotnet locations
 
-	output, err := cmd.CombinedOutput()
-
-	// App should start successfully (dotnet validation is non-blocking)
-	// but should log a warning
-	outputStr := string(output)
-
-	// Check if warning about dotnet is present in logs
-	if strings.Contains(outputStr, "dotnet") && strings.Contains(strings.ToLower(outputStr), "warn") {
-		t.Logf("Dotnet warning detected as expected: %s", outputStr)
-	} else {
-		// It's okay if dotnet is actually available on the system
-		// This test might not fail on systems with dotnet installed
-		t.Skip("Dotnet validation test skipped - dotnet may be available on system")
+	// Run with PTY (real terminal) so app stays in interactive mode
+	cmd := exec.Command("../../lazynuget-test")
+	cmd.Env = []string{
+		"PATH=" + fakePath,
+		"HOME=" + os.Getenv("HOME"),
+		"TERM=xterm",
 	}
 
-	// Verify error message includes installation instructions if warning present
-	if strings.Contains(strings.ToLower(outputStr), "dotnet cli not found") {
-		expectedPhrases := []string{
-			"installation instructions",
-			"dotnet",
-		}
+	// Start command with PTY (creates real terminal)
+	ptmx, err := pty.Start(cmd)
+	if err != nil {
+		t.Fatalf("Failed to start command with pty: %v", err)
+	}
+	defer ptmx.Close()
 
-		for _, phrase := range expectedPhrases {
-			if !strings.Contains(strings.ToLower(outputStr), strings.ToLower(phrase)) {
-				t.Errorf("Expected dotnet error to contain '%s', got: %s", phrase, outputStr)
-			}
-		}
+	// Collect output in background
+	outputChan := make(chan string)
+	go func() {
+		output, _ := io.ReadAll(ptmx)
+		outputChan <- string(output)
+	}()
+
+	// Give async goroutine time to execute (dotnet validation runs in background)
+	time.Sleep(500 * time.Millisecond)
+
+	// Kill the process
+	cmd.Process.Kill()
+	cmd.Wait()
+
+	// Get collected output
+	outputStr := <-outputChan
+
+	// Should log a warning about missing dotnet
+	if !strings.Contains(strings.ToLower(outputStr), "dotnet") || !strings.Contains(strings.ToLower(outputStr), "warn") {
+		t.Errorf("Expected warning about missing dotnet, got: %s", outputStr)
 	}
 
-	// Should not fail startup (dotnet validation is non-blocking)
-	if err != nil && cmd.ProcessState.ExitCode() > 2 {
-		t.Errorf("Expected startup to succeed even without dotnet, got exit code: %d", cmd.ProcessState.ExitCode())
+	// Verify error message includes installation instructions
+	if !strings.Contains(strings.ToLower(outputStr), "installation") {
+		t.Errorf("Expected installation instructions in dotnet warning, got: %s", outputStr)
 	}
 }
 
