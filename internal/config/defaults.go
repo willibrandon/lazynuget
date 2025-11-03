@@ -1,85 +1,68 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 )
 
-// DefaultConfig returns a configuration with all default values
-// Platform-specific paths are resolved based on the operating system
-func DefaultConfig() *AppConfig {
-	return &AppConfig{
-		// Flags
-		ShowVersion: false,
-		ShowHelp:    false,
+// GetDefaultConfig returns a Config with all default values populated.
+// This is the base configuration used when no other sources are available.
+// See: specs/002-config-management/plan.md, FR-001
+func GetDefaultConfig() *Config {
+	return &Config{
+		// Meta
+		Version:    "1.0",
+		LoadedFrom: "defaults",
+		LoadedAt:   time.Now(),
 
-		// Logging
-		LogLevel: "info",
-		LogDir:   getDefaultLogDir(),
+		// UI Settings (FR-020 through FR-025)
+		Theme: "default",
+		ColorScheme: ColorScheme{
+			Border:      "#FFFFFF",
+			BorderFocus: "#00FF00",
+			Text:        "#FFFFFF",
+			TextDim:     "#808080",
+			Background:  "#000000",
+			Highlight:   "#FFFF00",
+			Error:       "#FF0000",
+			Warning:     "#FFA500",
+			Success:     "#00FF00",
+			Info:        "#00FFFF",
+		},
+		CompactMode:     false,
+		ShowHints:       true,
+		ShowLineNumbers: false,
+		DateFormat:      "2006-01-02",
 
-		// Paths
-		ConfigPath: "",
-		ConfigDir:  getDefaultConfigDir(),
-		CacheDir:   getDefaultCacheDir(),
+		// Keybindings (FR-026 through FR-030)
+		Keybindings:       make(map[string]KeyBinding),
+		KeybindingProfile: "default",
 
-		// Mode
-		NonInteractive: false,
-		IsInteractive:  true, // Will be auto-detected
-
-		// UI Preferences
-		Theme:       "default",
-		CompactMode: false,
-		ShowHints:   true,
-
-		// Performance
-		StartupTimeout:   5 * time.Second,
-		ShutdownTimeout:  3 * time.Second,
+		// Performance (FR-031 through FR-034)
 		MaxConcurrentOps: 4,
+		CacheSize:        50, // MB
+		RefreshInterval:  0,  // Disabled
+		Timeouts: Timeouts{
+			NetworkRequest: 30 * time.Second,
+			DotnetCLI:      60 * time.Second,
+			FileOperation:  5 * time.Second,
+		},
 
-		// Environment
-		DotnetPath: findDotnetPath(),
+		// Dotnet CLI Integration (FR-035 through FR-038)
+		DotnetPath:      "", // Empty = auto-detect from PATH
+		DotnetVerbosity: "minimal",
+
+		// Logging (FR-039 through FR-042)
+		LogLevel:  "info",
+		LogDir:    "", // Empty = platform default
+		LogFormat: "text",
+		LogRotation: LogRotation{
+			MaxSize:    10,   // MB
+			MaxAge:     30,   // Days
+			MaxBackups: 3,    // Keep 3 old logs
+			Compress:   true, // Compress rotated logs
+		},
+
+		// Hot-Reload (FR-043)
+		HotReload: false, // Disabled by default for safety
 	}
-}
-
-// getDefaultConfigDir returns the platform-specific configuration directory
-func getDefaultConfigDir() string {
-	switch runtime.GOOS {
-	case "windows":
-		appData := os.Getenv("APPDATA")
-		if appData == "" {
-			appData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Roaming")
-		}
-		return filepath.Join(appData, "lazynuget")
-	case "darwin":
-		home := os.Getenv("HOME")
-		return filepath.Join(home, ".config", "lazynuget")
-	default: // linux, bsd, etc.
-		// Follow XDG Base Directory specification
-		xdgConfig := os.Getenv("XDG_CONFIG_HOME")
-		if xdgConfig == "" {
-			home := os.Getenv("HOME")
-			xdgConfig = filepath.Join(home, ".config")
-		}
-		return filepath.Join(xdgConfig, "lazynuget")
-	}
-}
-
-// getDefaultLogDir returns the default directory for log files
-func getDefaultLogDir() string {
-	return filepath.Join(getDefaultConfigDir(), "logs")
-}
-
-// getDefaultCacheDir returns the default directory for cache files
-func getDefaultCacheDir() string {
-	return filepath.Join(getDefaultConfigDir(), "cache")
-}
-
-// findDotnetPath attempts to locate the dotnet CLI in PATH
-// Returns empty string if not found
-func findDotnetPath() string {
-	// Will be properly implemented in platform detection phase
-	// For now, return empty - caller should check PATH
-	return ""
 }

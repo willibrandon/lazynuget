@@ -21,7 +21,7 @@ type App struct {
 	platform  platform.Platform
 	gui       any
 	ctx       context.Context
-	config    *config.AppConfig
+	config    *config.Config
 	lifecycle *lifecycle.Manager
 	cancel    context.CancelFunc
 	version   VersionInfo
@@ -77,19 +77,25 @@ func (app *App) Bootstrap(flags *Flags) error {
 	// Phase: Config loading
 	app.phase = "config"
 
-	// Convert bootstrap.Flags to config.Flags
-	var configFlags *config.Flags
+	// Create config loader
+	loader := config.NewConfigLoader()
+
+	// Prepare load options from flags
+	loadOpts := config.LoadOptions{
+		EnvVarPrefix: "LAZYNUGET_",
+		StrictMode:   false,
+		Logger:       nil, // Will set up logger after config is loaded
+	}
+
 	if flags != nil {
-		configFlags = &config.Flags{
-			ShowVersion:    flags.ShowVersion,
-			ShowHelp:       flags.ShowHelp,
-			ConfigPath:     flags.ConfigPath,
+		loadOpts.ConfigFilePath = flags.ConfigPath
+		loadOpts.CLIFlags = config.CLIFlags{
 			LogLevel:       flags.LogLevel,
 			NonInteractive: flags.NonInteractive,
 		}
 	}
 
-	cfg, err := config.Load(configFlags)
+	cfg, err := loader.Load(app.ctx, loadOpts)
 	if err != nil {
 		if setErr := app.lifecycle.SetState(lifecycle.StateFailed); setErr != nil {
 			return fmt.Errorf("configuration loading failed: %w (state transition error: %w)", err, setErr)
@@ -113,7 +119,11 @@ func (app *App) Bootstrap(flags *Flags) error {
 
 	// Phase: Determine run mode (interactive vs non-interactive)
 	app.phase = "runmode"
-	app.runMode = platform.DetermineRunMode(app.config.NonInteractive)
+	nonInteractive := false
+	if flags != nil {
+		nonInteractive = flags.NonInteractive
+	}
+	app.runMode = platform.DetermineRunMode(nonInteractive)
 	app.logger.Info("Run mode determined: %s", app.runMode)
 
 	// Phase: Dotnet CLI validation (async, non-blocking)
@@ -139,7 +149,7 @@ func (app *App) Bootstrap(flags *Flags) error {
 }
 
 // GetConfig returns the application configuration.
-func (app *App) GetConfig() *config.AppConfig {
+func (app *App) GetConfig() *config.Config {
 	return app.config
 }
 
@@ -244,9 +254,7 @@ func (app *App) checkDirectoryPermissions() {
 		name string
 		path string
 	}{
-		{"config", app.config.ConfigDir},
 		{"log", app.config.LogDir},
-		{"cache", app.config.CacheDir},
 	}
 
 	for _, dir := range directories {
@@ -299,12 +307,8 @@ func (app *App) useTempDirectoryFallback(dirType string) {
 
 	// Update config with fallback path
 	switch dirType {
-	case "config":
-		app.config.ConfigDir = fallbackPath
 	case "log":
 		app.config.LogDir = fallbackPath
-	case "cache":
-		app.config.CacheDir = fallbackPath
 	}
 
 	app.logger.Info("Using fallback %s directory: %s", dirType, fallbackPath)

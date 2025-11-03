@@ -27,13 +27,13 @@ LazyNuGet is a single project with the following structure:
 
 **Purpose**: Project initialization and configuration package structure
 
-- [ ] T001 Create internal/config/ package directory structure per plan.md
-- [ ] T002 [P] Add gopkg.in/yaml.v3 dependency to go.mod
-- [ ] T003 [P] Add github.com/BurntSushi/toml dependency to go.mod
-- [ ] T004 [P] Add github.com/fsnotify/fsnotify dependency to go.mod
-- [ ] T005 [P] Add github.com/zalando/go-keyring dependency to go.mod
-- [ ] T006 Create tests/fixtures/configs/ directory for test configuration files
-- [ ] T007 Run go mod tidy to verify all dependencies resolve correctly
+- [X] T001 Create internal/config/ package directory structure per plan.md
+- [X] T002 [P] Add gopkg.in/yaml.v3 dependency to go.mod
+- [X] T003 [P] Add github.com/BurntSushi/toml dependency to go.mod
+- [X] T004 [P] Add github.com/fsnotify/fsnotify dependency to go.mod
+- [X] T005 [P] Add github.com/zalando/go-keyring dependency to go.mod
+- [X] T006 Create tests/fixtures/configs/ directory for test configuration files
+- [X] T007 Run go mod tidy to verify all dependencies resolve correctly
 
 ---
 
@@ -43,21 +43,21 @@ LazyNuGet is a single project with the following structure:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 [P] Define Config struct with all 50+ settings in internal/config/types.go per data-model.md entity #1
-- [ ] T009 [P] Define ColorScheme struct in internal/config/types.go per data-model.md entity #2
-- [ ] T010 [P] Define KeyBinding struct in internal/config/types.go per data-model.md entity #3
-- [ ] T011 [P] Define Timeouts struct in internal/config/types.go per data-model.md entity #4
-- [ ] T012 [P] Define LogRotation struct in internal/config/types.go per data-model.md entity #5
-- [ ] T013 [P] Define ValidationError struct with Error() method in internal/config/types.go per data-model.md entity #8
-- [ ] T014 [P] Define ConfigSource struct in internal/config/types.go per data-model.md entity #6
-- [ ] T015 [P] Define MergedConfig struct in internal/config/types.go per data-model.md entity #7
-- [ ] T016 [P] Define EncryptedValue struct in internal/config/types.go per data-model.md entity #9
-- [ ] T017 [P] Define SettingSchema and ConfigSchema structs in internal/config/types.go per data-model.md entity #10
-- [ ] T018 Implement GetDefaultConfig() function in internal/config/defaults.go returning Config with all default values per FR-001
-- [ ] T019 Implement getPlatformConfigPath() function in internal/config/paths.go for platform-specific paths per FR-006
-- [ ] T020 [P] Create ConfigLoader interface in internal/config/config.go per contracts/config_loader.md
-- [ ] T021 [P] Create Logger interface in internal/config/config.go per contracts/config_loader.md
-- [ ] T022 Implement schema definition for all 50+ settings in internal/config/schema.go per data-model.md entity #10
+- [X] T008 [P] Define Config struct with all 50+ settings in internal/config/types.go per data-model.md entity #1
+- [X] T009 [P] Define ColorScheme struct in internal/config/types.go per data-model.md entity #2
+- [X] T010 [P] Define KeyBinding struct in internal/config/types.go per data-model.md entity #3
+- [X] T011 [P] Define Timeouts struct in internal/config/types.go per data-model.md entity #4
+- [X] T012 [P] Define LogRotation struct in internal/config/types.go per data-model.md entity #5
+- [X] T013 [P] Define ValidationError struct with Error() method in internal/config/types.go per data-model.md entity #8
+- [X] T014 [P] Define ConfigSource struct in internal/config/types.go per data-model.md entity #6
+- [X] T015 [P] Define MergedConfig struct in internal/config/types.go per data-model.md entity #7
+- [X] T016 [P] Define EncryptedValue struct in internal/config/types.go per data-model.md entity #9
+- [X] T017 [P] Define SettingSchema and ConfigSchema structs in internal/config/types.go per data-model.md entity #10
+- [X] T018 Implement GetDefaultConfig() function in internal/config/defaults.go returning Config with all default values per FR-001
+- [X] T019 Implement getPlatformConfigPath() function in internal/config/paths.go for platform-specific paths per FR-006
+- [X] T020 [P] Create ConfigLoader interface in internal/config/config.go per contracts/config_loader.md
+- [X] T021 [P] Create Logger interface in internal/config/config.go per contracts/config_loader.md
+- [X] T022 Implement schema definition for all 50+ settings in internal/config/schema.go per data-model.md entity #10
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -73,19 +73,19 @@ LazyNuGet is a single project with the following structure:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T023 [P] [US1] Create test for default config loading in tests/integration/config_defaults_test.go verifying GetDefaultConfig returns valid Config
-- [ ] T024 [P] [US1] Create test for missing config file scenario in tests/integration/config_defaults_test.go verifying app uses defaults when file doesn't exist
-- [ ] T025 [P] [US1] Create test fixture tests/fixtures/configs/empty.yml with empty content verifying fallback to defaults
+- [X] T023 [P] [US1] Create test for default config loading in tests/integration/config_defaults_test.go verifying GetDefaultConfig returns valid Config
+- [X] T024 [P] [US1] Create test for missing config file scenario in tests/integration/config_defaults_test.go verifying app uses defaults when file doesn't exist
+- [X] T025 [P] [US1] Create test fixture tests/fixtures/configs/empty.yml with empty content verifying fallback to defaults
 
 ### Implementation for User Story 1
 
-- [ ] T026 [US1] Implement configLoader struct implementing ConfigLoader interface in internal/config/config.go
-- [ ] T027 [US1] Implement Load() method handling missing config file case in internal/config/config.go per FR-001
-- [ ] T028 [US1] Implement GetDefaults() method returning default Config in internal/config/config.go per contract
-- [ ] T029 [US1] Implement basic validation for Config struct in internal/config/validator.go checking required field types
-- [ ] T030 [US1] Implement Validate() method with empty validation rules in internal/config/config.go per contract
-- [ ] T031 [US1] Add logging for "using default configuration" in internal/config/config.go when no file present
-- [ ] T032 [US1] Verify T023-T025 tests now pass with default config implementation
+- [X] T026 [US1] Implement configLoader struct implementing ConfigLoader interface in internal/config/config.go
+- [X] T027 [US1] Implement Load() method handling missing config file case in internal/config/config.go per FR-001
+- [X] T028 [US1] Implement GetDefaults() method returning default Config in internal/config/config.go per contract
+- [X] T029 [US1] Implement basic validation for Config struct in internal/config/validator.go checking required field types
+- [X] T030 [US1] Implement Validate() method with empty validation rules in internal/config/config.go per contract
+- [X] T031 [US1] Add logging for "using default configuration" in internal/config/config.go when no file present
+- [X] T032 [US1] Verify T023-T025 tests now pass with default config implementation
 
 **Checkpoint**: At this point, LazyNuGet can start with defaults - minimal viable config system
 
