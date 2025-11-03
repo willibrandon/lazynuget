@@ -111,7 +111,7 @@ func (app *App) Bootstrap(flags *Flags) error {
 	cfg, err := config.Load(configFlags)
 	if err != nil {
 		app.lifecycle.SetState(lifecycle.StateFailed)
-		return fmt.Errorf("failed to load config: %w", err)
+		return fmt.Errorf("configuration loading failed: %w", err)
 	}
 	app.config = cfg
 
@@ -128,6 +128,18 @@ func (app *App) Bootstrap(flags *Flags) error {
 	app.phase = "runmode"
 	app.runMode = platform.DetermineRunMode(app.config.NonInteractive)
 	app.logger.Info("Run mode determined: %s", app.runMode)
+
+	// Phase: Dotnet CLI validation (async, non-blocking)
+	app.phase = "dotnet-validation"
+	// Launch dotnet validation in background - don't block startup
+	go func() {
+		if err := platform.ValidateDotnetCLI(); err != nil {
+			app.logger.Warn("Dotnet CLI validation warning: %v", err)
+			// Don't fail startup - just warn the user
+		} else {
+			app.logger.Debug("Dotnet CLI validated successfully")
+		}
+	}()
 
 	// Transition to running state
 	app.phase = "ready"

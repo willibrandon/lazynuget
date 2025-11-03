@@ -2,7 +2,9 @@
 package platform
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 
@@ -143,4 +145,38 @@ func DetermineRunMode(nonInteractiveFlag bool) RunMode {
 
 	// All checks passed - we can run interactively
 	return RunModeInteractive
+}
+
+// ValidateDotnetCLI checks if the dotnet CLI is available and functional.
+// Returns nil if dotnet is found and working, otherwise returns an error with
+// installation instructions.
+func ValidateDotnetCLI() error {
+	// Try to find dotnet in PATH
+	dotnetPath, err := exec.LookPath("dotnet")
+	if err != nil {
+		return fmt.Errorf("dotnet CLI not found in PATH\n\n" +
+			"LazyNuGet requires the .NET SDK to manage NuGet packages.\n\n" +
+			"Installation instructions:\n" +
+			"  • Windows: https://dotnet.microsoft.com/download\n" +
+			"  • macOS: brew install dotnet-sdk\n" +
+			"  • Linux: https://docs.microsoft.com/dotnet/core/install/linux")
+	}
+
+	// Verify dotnet works by running --version
+	cmd := exec.Command(dotnetPath, "--version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("dotnet CLI found at %s but failed to execute: %w\n"+
+			"Output: %s\n\n"+
+			"Try reinstalling the .NET SDK", dotnetPath, err, string(output))
+	}
+
+	version := strings.TrimSpace(string(output))
+	if version == "" {
+		return fmt.Errorf("dotnet CLI found but returned empty version\n" +
+			"Try reinstalling the .NET SDK")
+	}
+
+	// Successfully validated
+	return nil
 }

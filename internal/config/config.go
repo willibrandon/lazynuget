@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,12 @@ func Load(flags *Flags) (*AppConfig, error) {
 	// Start with defaults
 	cfg := DefaultConfig()
 
+	// Apply config path from flags FIRST (before loading file)
+	// This allows --config flag to specify which file to load
+	if flags != nil && flags.ConfigPath != "" {
+		cfg.ConfigPath = flags.ConfigPath
+	}
+
 	// Try to load config file (gracefully handle missing file)
 	if err := loadConfigFile(cfg); err != nil {
 		// Only return error if file exists but can't be read/parsed
@@ -28,7 +35,7 @@ func Load(flags *Flags) (*AppConfig, error) {
 	// Apply environment variables (overrides file)
 	applyEnvironmentVariables(cfg)
 
-	// Apply CLI flags (highest precedence)
+	// Apply remaining CLI flags (highest precedence)
 	if flags != nil {
 		applyCLIFlags(cfg, flags)
 	}
@@ -75,7 +82,7 @@ func loadConfigFile(cfg *AppConfig) error {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	// Parse YAML
+	// Parse YAML with strict mode to catch syntax errors
 	var fileConfig struct {
 		LogLevel         string        `yaml:"logLevel"`
 		LogDir           string        `yaml:"logDir"`
@@ -87,8 +94,17 @@ func loadConfigFile(cfg *AppConfig) error {
 		MaxConcurrentOps int           `yaml:"maxConcurrentOps"`
 	}
 
-	if err := yaml.Unmarshal(data, &fileConfig); err != nil {
-		return fmt.Errorf("failed to parse YAML: %w", err)
+	// Use decoder with strict mode to catch unknown fields and syntax errors
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true) // Fail on unknown fields
+
+	if err := decoder.Decode(&fileConfig); err != nil {
+		// Provide helpful YAML parsing error with line/column info
+		return fmt.Errorf("failed to parse YAML config file %s: %w\n\n"+
+			"Please check the file for syntax errors:\n"+
+			"  • Ensure proper indentation (use spaces, not tabs)\n"+
+			"  • Check for missing colons or quotes\n"+
+			"  • Validate YAML syntax at https://www.yamllint.com/", configPath, err)
 	}
 
 	// Apply file config (only if values are non-zero)
