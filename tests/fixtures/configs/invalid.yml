@@ -1,0 +1,9 @@
+# Invalid LazyNuGet configuration file (for testing error handling)
+
+# Invalid log level
+logLevel: invalid_level
+
+# Invalid timeout values
+startupTimeout: 100s  # Too high (max 30s)
+shutdownTimeout: 0s   # Too low (min 1s)
+maxConcurrentOps: 100 # Too high (max 16)

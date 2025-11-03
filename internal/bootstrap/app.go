@@ -101,6 +101,7 @@ func (app *App) Bootstrap() error {
 
 	// Phase: Logging setup
 	app.phase = "logging"
+	// For now, log to stdout only (file logging can be added later)
 	app.logger = logging.New(app.config.LogLevel, "")
 
 	// Phase: Platform detection

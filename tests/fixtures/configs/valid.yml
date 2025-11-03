@@ -1,0 +1,16 @@
+# Valid LazyNuGet configuration file
+# This file demonstrates all supported configuration options
+
+# Logging configuration
+logLevel: debug
+logDir: /tmp/lazynuget/logs
+
+# UI preferences
+theme: default
+compactMode: false
+showHints: true
+
+# Performance tuning
+startupTimeout: 5s
+shutdownTimeout: 3s
+maxConcurrentOps: 4

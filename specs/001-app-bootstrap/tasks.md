@@ -119,23 +119,23 @@ LazyNuGet uses single project structure with Go conventions:
 
 ### Implementation for User Story 3
 
-- [ ] T038 [P] [US3] Implement full `internal/config/config.go` with `AppConfig` struct (all fields from data-model.md: logLevel, configPath, nonInteractive, configDir, logDir, cacheDir, theme, compactMode, showHints, startupTimeout, shutdownTimeout, maxConcurrentOps, dotnetPath, isInteractive)
-- [ ] T039 [US3] Implement `config.Load(args []string) (*AppConfig, error)` that merges CLI flags, environment variables, config file (YAML), and defaults with correct precedence
-- [ ] T040 [US3] Implement `config.Validate() error` that applies all validation rules from data-model.md (VR-006 through VR-013)
-- [ ] T041 [US3] Implement `config.DefaultConfig() *AppConfig` factory function with platform-specific paths resolved
-- [ ] T042 [US3] Add YAML config file loading in `config.Load()` using gopkg.in/yaml.v3 (handle missing file gracefully - use defaults)
-- [ ] T043 [US3] Add environment variable support in `config.Load()` (LAZYNUGET_LOG_LEVEL, LAZYNUGET_CONFIG, etc.)
-- [ ] T044 [US3] Update `App.Bootstrap()` to use real `config.Load()` instead of stub (pass CLI args)
-- [ ] T045 [US3] Update `internal/logging/logger.go` to implement real logger with levels (using log/slog or similar) and file output
-- [ ] T046 [US3] Create `tests/fixtures/configs/valid.yml` with sample valid configuration
-- [ ] T047 [P] [US3] Create `tests/fixtures/configs/invalid.yml` with invalid configuration (for error testing)
+- [X] T038 [P] [US3] Implement full `internal/config/config.go` with `AppConfig` struct (all fields from data-model.md: logLevel, configPath, nonInteractive, configDir, logDir, cacheDir, theme, compactMode, showHints, startupTimeout, shutdownTimeout, maxConcurrentOps, dotnetPath, isInteractive)
+- [X] T039 [US3] Implement `config.Load(args []string) (*AppConfig, error)` that merges CLI flags, environment variables, config file (YAML), and defaults with correct precedence
+- [X] T040 [US3] Implement `config.Validate() error` that applies all validation rules from data-model.md (VR-006 through VR-013)
+- [X] T041 [US3] Implement `config.DefaultConfig() *AppConfig` factory function with platform-specific paths resolved
+- [X] T042 [US3] Add YAML config file loading in `config.Load()` using gopkg.in/yaml.v3 (handle missing file gracefully - use defaults)
+- [X] T043 [US3] Add environment variable support in `config.Load()` (LAZYNUGET_LOG_LEVEL, LAZYNUGET_CONFIG, etc.)
+- [X] T044 [US3] Update `App.Bootstrap()` to use real `config.Load()` instead of stub (pass CLI args)
+- [X] T045 [US3] Update `internal/logging/logger.go` to implement real logger with levels (using log/slog or similar) and file output
+- [X] T046 [US3] Create `tests/fixtures/configs/valid.yml` with sample valid configuration
+- [X] T047 [P] [US3] Create `tests/fixtures/configs/invalid.yml` with invalid configuration (for error testing)
 
 ### Integration Tests for User Story 3
 
-- [ ] T048 [P] [US3] Create `tests/integration/config_test.go` with TestConfigFileLoading that validates loading from custom path
-- [ ] T049 [P] [US3] Create `tests/integration/config_test.go` with TestCLIFlagPrecedence that validates CLI flags override config file
-- [ ] T050 [P] [US3] Create `tests/integration/config_test.go` with TestEnvironmentVariables that validates env vars override config file
-- [ ] T051 [P] [US3] Create `tests/integration/config_test.go` with TestInvalidConfigFallback that validates graceful fallback to defaults
+- [X] T048 [P] [US3] Create `tests/integration/config_test.go` with TestConfigFileLoading that validates loading from custom path
+- [X] T049 [P] [US3] Create `tests/integration/config_test.go` with TestCLIFlagPrecedence that validates CLI flags override config file
+- [X] T050 [P] [US3] Create `tests/integration/config_test.go` with TestEnvironmentVariables that validates env vars override config file
+- [X] T051 [P] [US3] Create `tests/integration/config_test.go` with TestInvalidConfigFallback that validates graceful fallback to defaults
 
 **Checkpoint**: All configuration features work - flags, env vars, files, precedence, validation
 
