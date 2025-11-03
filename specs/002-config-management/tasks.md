@@ -171,25 +171,25 @@ LazyNuGet is a single project with the following structure:
 
 ### Tests for User Story 4
 
-- [ ] T073 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --log-level flag overrides all other sources per FR-054
-- [ ] T074 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --config flag specifies custom config file path per FR-053
-- [ ] T075 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --non-interactive flag works per FR-054
-- [ ] T076 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --no-color flag works per FR-054
-- [ ] T077 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --print-config outputs merged config per FR-055
-- [ ] T078 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --validate-config validates without starting app per FR-056
+- [X] T073 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --log-level flag overrides all other sources per FR-054
+- [X] T074 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --config flag specifies custom config file path per FR-053
+- [X] T075 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --non-interactive flag works per FR-054
+- [X] T076 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --no-color flag works per FR-054
+- [X] T077 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --print-config outputs merged config per FR-055
+- [X] T078 [P] [US4] Create integration test in tests/integration/config_cli_test.go verifying --validate-config validates without starting app per FR-056
 
 ### Implementation for User Story 4
 
-- [ ] T079 [US4] Update LoadOptions struct in internal/config/types.go to include CLIFlags field per contracts/config_loader.md
-- [ ] T080 [US4] Update CLIFlags struct in internal/config/types.go with fields for --log-level, --non-interactive, --no-color per FR-054
-- [ ] T081 [US4] Update Load() method in internal/config/config.go to accept LoadOptions with CLI flags
-- [ ] T082 [US4] Update mergeConfigs() in internal/config/merger.go to merge CLI flags with highest precedence: cli > env > file > defaults per FR-002
-- [ ] T083 [US4] Implement --config flag handling in internal/config/config.go per FR-007
-- [ ] T084 [US4] Implement LAZYNUGET_CONFIG env var handling in internal/config/config.go per FR-008
-- [ ] T085 [US4] Implement --print-config functionality in internal/config/config.go calling PrintConfig() and exiting per FR-055
-- [ ] T086 [US4] Implement --validate-config functionality in internal/config/config.go calling Validate() and exiting per FR-056
-- [ ] T087 [US4] Update bootstrap integration in internal/bootstrap/app.go to pass CLI flags to config.Load()
-- [ ] T088 [US4] Verify T073-T078 tests now pass with CLI flag support
+- [X] T079 [US4] Update LoadOptions struct in internal/config/types.go to include CLIFlags field per contracts/config_loader.md
+- [X] T080 [US4] Update CLIFlags struct in internal/config/types.go with fields for --log-level, --non-interactive, --no-color per FR-054
+- [X] T081 [US4] Update Load() method in internal/config/config.go to accept LoadOptions with CLI flags
+- [X] T082 [US4] Update mergeConfigs() in internal/config/merger.go to merge CLI flags with highest precedence: cli > env > file > defaults per FR-002
+- [X] T083 [US4] Implement --config flag handling in internal/config/config.go per FR-007
+- [X] T084 [US4] Implement LAZYNUGET_CONFIG env var handling in internal/config/config.go per FR-008
+- [X] T085 [US4] Implement --print-config functionality in internal/config/config.go calling PrintConfig() and exiting per FR-055
+- [X] T086 [US4] Implement --validate-config functionality in internal/config/config.go calling Validate() and exiting per FR-056
+- [X] T087 [US4] Update bootstrap integration in internal/bootstrap/app.go to pass CLI flags to config.Load()
+- [X] T088 [US4] Verify T073-T078 tests now pass with CLI flag support
 
 **Checkpoint**: Full four-layer precedence system working (defaults < file < env < cli)
 

@@ -235,7 +235,16 @@ func (cl *configLoader) Load(ctx context.Context, opts LoadOptions) (*Config, er
 		}
 	}
 
-	// TODO: Phase 6 - Apply CLI flag overrides here
+	// Apply CLI flag overrides (Phase 6, FR-054, highest precedence)
+	if opts.CLIFlags.LogLevel != "" {
+		if opts.Logger != nil {
+			opts.Logger.Debug("Applying CLI flag override: logLevel = %s", opts.CLIFlags.LogLevel)
+		}
+		cfg.LogLevel = opts.CLIFlags.LogLevel
+	}
+
+	// Note: NonInteractive and NoColor flags are consumed by bootstrap/GUI layers
+	// They are passed through LoadOptions but don't affect the Config struct
 
 	// Validate the final merged config
 	validationErrors := cl.validator.validate(cfg)
