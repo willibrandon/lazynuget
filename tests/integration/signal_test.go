@@ -2,6 +2,7 @@ package integration
 
 import (
 	"os/exec"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -9,6 +10,11 @@ import (
 )
 
 func TestSIGINTHandling(t *testing.T) {
+	// SIGINT is not fully supported on Windows (handled differently via console events)
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping SIGINT test on Windows - signal handling works differently via console events")
+	}
+
 	// Build the binary
 	binaryPath := buildTestBinary(t)
 	defer cleanupBinary(binaryPath)
@@ -52,6 +58,11 @@ func TestSIGINTHandling(t *testing.T) {
 }
 
 func TestSIGTERMHandling(t *testing.T) {
+	// SIGTERM is not supported on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping SIGTERM test on Windows - signal not supported on this platform")
+	}
+
 	// Build the binary
 	binaryPath := buildTestBinary(t)
 	defer cleanupBinary(binaryPath)
@@ -95,6 +106,11 @@ func TestSIGTERMHandling(t *testing.T) {
 }
 
 func TestMultipleSignals(t *testing.T) {
+	// SIGINT is not fully supported on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping multiple signals test on Windows - signal handling works differently via console events")
+	}
+
 	// Build the binary
 	binaryPath := buildTestBinary(t)
 	defer cleanupBinary(binaryPath)
@@ -140,6 +156,11 @@ func TestMultipleSignals(t *testing.T) {
 }
 
 func TestShutdownLogsPresent(t *testing.T) {
+	// SIGINT is not fully supported on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping shutdown logs test on Windows - uses SIGINT which works differently via console events")
+	}
+
 	// Build the binary
 	binaryPath := buildTestBinary(t)
 	defer cleanupBinary(binaryPath)

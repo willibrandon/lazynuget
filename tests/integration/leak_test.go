@@ -14,12 +14,21 @@ func TestResourceLeakDetection(t *testing.T) {
 		t.Skip("Skipping leak test in short mode")
 	}
 
-	// Build binary fresh for this test
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-leak-test", "../../cmd/lazynuget/main.go")
+	// Build binary with platform-specific name
+	const leakBinaryBase = "../../lazynuget-leak-test"
+	leakBinaryPath := leakBinaryBase + getPlatformExt()
+
+	var buildCmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		buildCmd = exec.Command("go", "build", "-o", leakBinaryBase+".exe", "../../cmd/lazynuget/main.go")
+	} else {
+		buildCmd = exec.Command("go", "build", "-o", leakBinaryBase, "../../cmd/lazynuget/main.go")
+	}
+
 	if err := buildCmd.Run(); err != nil {
 		t.Fatalf("Failed to build binary: %v", err)
 	}
-	defer exec.Command("rm", "-f", "../../lazynuget-leak-test").Run()
+	defer cleanupBinary(leakBinaryPath)
 
 	// Baseline memory
 	runtime.GC()
@@ -31,7 +40,7 @@ func TestResourceLeakDetection(t *testing.T) {
 
 	start := time.Now()
 	for i := range cycles {
-		cmd := exec.Command("../../lazynuget-leak-test", "--version")
+		cmd := exec.Command(leakBinaryPath, "--version")
 		if err := cmd.Run(); err != nil {
 			t.Fatalf("Cycle %d failed: %v", i+1, err)
 		}
@@ -87,12 +96,21 @@ func TestConcurrentStartupShutdown(t *testing.T) {
 		t.Skip("Skipping concurrent test in short mode")
 	}
 
-	// Build binary
-	buildCmd := exec.Command("go", "build", "-o", "../../lazynuget-concurrent-test", "../../cmd/lazynuget/main.go")
+	// Build binary with platform-specific name
+	const concBinaryBase = "../../lazynuget-concurrent-test"
+	concBinaryPath := concBinaryBase + getPlatformExt()
+
+	var buildCmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		buildCmd = exec.Command("go", "build", "-o", concBinaryBase+".exe", "../../cmd/lazynuget/main.go")
+	} else {
+		buildCmd = exec.Command("go", "build", "-o", concBinaryBase, "../../cmd/lazynuget/main.go")
+	}
+
 	if err := buildCmd.Run(); err != nil {
 		t.Fatalf("Failed to build binary: %v", err)
 	}
-	defer exec.Command("rm", "-f", "../../lazynuget-concurrent-test").Run()
+	defer cleanupBinary(concBinaryPath)
 
 	concurrency := 10
 	iterationsPerWorker := 50
@@ -106,7 +124,7 @@ func TestConcurrentStartupShutdown(t *testing.T) {
 	for range concurrency {
 		go func() {
 			for range iterationsPerWorker {
-				cmd := exec.Command("../../lazynuget-concurrent-test", "--version")
+				cmd := exec.Command(concBinaryPath, "--version")
 				if err := cmd.Run(); err != nil {
 					errCh <- err
 					return

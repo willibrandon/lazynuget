@@ -2,12 +2,18 @@ package integration
 
 import (
 	"os/exec"
+	"runtime"
 	"syscall"
 	"testing"
 	"time"
 )
 
 func TestBasicStartup(t *testing.T) {
+	// SIGTERM is not supported on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping basic startup test on Windows - uses SIGTERM which is not supported on this platform")
+	}
+
 	// Build the binary
 	binaryPath := buildTestBinary(t)
 	defer cleanupBinary(binaryPath)
