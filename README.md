@@ -18,7 +18,7 @@ A modern terminal user interface (TUI) for NuGet package management, inspired by
 ## Requirements
 
 - **Go**: 1.24 or higher
-- **.NET SDK**: 6.0 or higher (for NuGet operations)
+- **.NET SDK**: 9.0 or higher (for NuGet operations)
 - **Platform**: Windows, macOS, or Linux
 
 ## Building
