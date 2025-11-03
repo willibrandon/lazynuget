@@ -213,7 +213,28 @@ func (cl *configLoader) Load(ctx context.Context, opts LoadOptions) (*Config, er
 		}
 	}
 
-	// TODO: Phase 5 - Apply environment variable overrides here
+	// Apply environment variable overrides (Phase 5, FR-050, FR-051, FR-052)
+	if opts.EnvVarPrefix != "" {
+		envVars := parseEnvVars(opts.EnvVarPrefix)
+		if len(envVars) > 0 {
+			if opts.Logger != nil {
+				opts.Logger.Debug("Found %d environment variable overrides", len(envVars))
+			}
+
+			// Apply each environment variable to the config
+			for path, value := range envVars {
+				if opts.Logger != nil {
+					opts.Logger.Debug("Applying env var override: %s = %s", path, value)
+				}
+				if err := applyEnvVarValue(cfg, path, value); err != nil {
+					if opts.Logger != nil {
+						opts.Logger.Warn("Failed to apply env var %s: %v", path, err)
+					}
+				}
+			}
+		}
+	}
+
 	// TODO: Phase 6 - Apply CLI flag overrides here
 
 	// Validate the final merged config

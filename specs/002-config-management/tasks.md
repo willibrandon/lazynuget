@@ -142,22 +142,22 @@ LazyNuGet is a single project with the following structure:
 
 ### Tests for User Story 3
 
-- [ ] T060 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying simple env var (LAZYNUGET_LOG_LEVEL=debug) overrides default
-- [ ] T061 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying nested env var (LAZYNUGET_COLOR_SCHEME_BORDER=#FF0000) works per FR-051
-- [ ] T062 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying env var overrides config file value per FR-002
-- [ ] T063 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying invalid env var value triggers fallback to default per FR-012
-- [ ] T064 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying type conversion for bool/int/duration env vars per FR-052
+- [X] T060 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying simple env var (LAZYNUGET_LOG_LEVEL=debug) overrides default
+- [X] T061 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying nested env var (LAZYNUGET_COLOR_SCHEME_BORDER=#FF0000) works per FR-051
+- [X] T062 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying env var overrides config file value per FR-002
+- [X] T063 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying invalid env var value triggers fallback to default per FR-012
+- [X] T064 [P] [US3] Create integration test in tests/integration/config_env_test.go verifying type conversion for bool/int/duration env vars per FR-052
 
 ### Implementation for User Story 3
 
-- [ ] T065 [P] [US3] Implement parseEnvVars() in internal/config/env.go parsing all LAZYNUGET_ environment variables per FR-050
-- [ ] T066 [US3] Implement splitEnvVarPath() in internal/config/env.go converting LAZYNUGET_COLOR_SCHEME_BORDER to ["colorScheme", "border"] per FR-051
-- [ ] T067 [US3] Implement type conversion in internal/config/env.go for bool/int/duration/string per FR-052
-- [ ] T068 [US3] Implement case-insensitive matching in internal/config/env.go for env var names
-- [ ] T069 [US3] Update Load() method in internal/config/config.go to parse environment variables
-- [ ] T070 [US3] Update mergeConfigs() in internal/config/merger.go to merge env vars with precedence: env > file > defaults per FR-002
-- [ ] T071 [US3] Add logging for env var overrides in internal/config/config.go showing which settings were overridden
-- [ ] T072 [US3] Verify T060-T064 tests now pass with environment variable support
+- [X] T065 [P] [US3] Implement parseEnvVars() in internal/config/env.go parsing all LAZYNUGET_ environment variables per FR-050
+- [X] T066 [US3] Implement splitEnvVarPath() in internal/config/env.go converting LAZYNUGET_COLOR_SCHEME_BORDER to ["colorScheme", "border"] per FR-051
+- [X] T067 [US3] Implement type conversion in internal/config/env.go for bool/int/duration/string per FR-052
+- [X] T068 [US3] Implement case-insensitive matching in internal/config/env.go for env var names
+- [X] T069 [US3] Update Load() method in internal/config/config.go to parse environment variables
+- [X] T070 [US3] Update mergeConfigs() in internal/config/merger.go to merge env vars with precedence: env > file > defaults per FR-002
+- [X] T071 [US3] Add logging for env var overrides in internal/config/config.go showing which settings were overridden
+- [X] T072 [US3] Verify T060-T064 tests now pass with environment variable support
 
 **Checkpoint**: All three user stories (defaults, file, env vars) work independently and in combination
 
