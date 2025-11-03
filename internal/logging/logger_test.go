@@ -3,6 +3,7 @@ package logging
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -346,15 +347,17 @@ func TestNewCreatesLogDirectory(t *testing.T) {
 		t.Errorf("Log directory was not created: %v", err)
 	}
 
-	// Verify directory has correct permissions (0700)
-	info, err := os.Stat(logDir)
-	if err != nil {
-		t.Fatalf("Failed to stat log directory: %v", err)
-	}
+	// Verify directory has correct permissions (0700) - Unix only
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(logDir)
+		if err != nil {
+			t.Fatalf("Failed to stat log directory: %v", err)
+		}
 
-	perm := info.Mode().Perm()
-	if perm != 0o700 {
-		t.Errorf("Expected log directory permissions 0700, got %o", perm)
+		perm := info.Mode().Perm()
+		if perm != 0o700 {
+			t.Errorf("Expected log directory permissions 0700, got %o", perm)
+		}
 	}
 }
 
@@ -367,14 +370,17 @@ func TestLogFilePermissions(t *testing.T) {
 	defer logger.Close()
 	logger.Info("test message")
 
-	info, err := os.Stat(logPath)
-	if err != nil {
-		t.Fatalf("Failed to stat log file: %v", err)
-	}
+	// Verify file permissions - Unix only (Windows handles permissions differently)
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(logPath)
+		if err != nil {
+			t.Fatalf("Failed to stat log file: %v", err)
+		}
 
-	perm := info.Mode().Perm()
-	if perm != 0o600 {
-		t.Errorf("Expected log file permissions 0600, got %o", perm)
+		perm := info.Mode().Perm()
+		if perm != 0o600 {
+			t.Errorf("Expected log file permissions 0600, got %o", perm)
+		}
 	}
 }
 
