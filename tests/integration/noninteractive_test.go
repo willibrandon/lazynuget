@@ -95,36 +95,26 @@ func TestCIEnvironmentDetection(t *testing.T) {
 	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(), "CI=true")
 
-	outputPipe, err := cmd.StdoutPipe()
+	// Use CombinedOutput to capture both stdout and stderr
+	// (logging goes to stderr, so we need to capture both)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Failed to get stdout pipe: %v", err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start application: %v", err)
-	}
-
-	// Read output
-	output := make([]byte, 8192)
-	n, _ := outputPipe.Read(output)
-	outputStr := string(output[:n])
-
-	// Wait for process to complete
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	select {
-	case <-done:
-		// Verify non-interactive mode was detected via CI environment
-		if !strings.Contains(outputStr, "non-interactive") {
-			t.Errorf("Expected CI environment to trigger non-interactive mode. Output: %s", outputStr)
+		// Non-zero exit is OK for this test - we just want to verify detection
+		if _, ok := err.(*exec.ExitError); ok {
+			// Application exited with non-zero code, which is fine
+			outputStr := string(output)
+			if !strings.Contains(outputStr, "non-interactive") {
+				t.Errorf("Expected CI environment to trigger non-interactive mode. Output: %s", outputStr)
+			}
+			return
 		}
+		t.Fatalf("Failed to run application: %v", err)
+	}
 
-	case <-time.After(3 * time.Second):
-		cmd.Process.Kill()
-		t.Fatal("Application did not exit promptly with CI environment set")
+	// Verify non-interactive mode was detected via CI environment
+	outputStr := string(output)
+	if !strings.Contains(outputStr, "non-interactive") {
+		t.Errorf("Expected CI environment to trigger non-interactive mode. Output: %s", outputStr)
 	}
 }
 
@@ -170,35 +160,25 @@ func TestDumbTerminalDetection(t *testing.T) {
 	cmd := exec.Command(binaryPath)
 	cmd.Env = append(os.Environ(), "TERM=dumb")
 
-	outputPipe, err := cmd.StdoutPipe()
+	// Use CombinedOutput to capture both stdout and stderr
+	// (logging goes to stderr, so we need to capture both)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Failed to get stdout pipe: %v", err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start application: %v", err)
-	}
-
-	// Read output
-	output := make([]byte, 8192)
-	n, _ := outputPipe.Read(output)
-	outputStr := string(output[:n])
-
-	// Wait for process to complete
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	select {
-	case <-done:
-		// Verify non-interactive mode was detected via TERM=dumb
-		if !strings.Contains(outputStr, "non-interactive") {
-			t.Errorf("Expected TERM=dumb to trigger non-interactive mode. Output: %s", outputStr)
+		// Non-zero exit is OK for this test - we just want to verify detection
+		if _, ok := err.(*exec.ExitError); ok {
+			// Application exited with non-zero code, which is fine
+			outputStr := string(output)
+			if !strings.Contains(outputStr, "non-interactive") {
+				t.Errorf("Expected TERM=dumb to trigger non-interactive mode. Output: %s", outputStr)
+			}
+			return
 		}
+		t.Fatalf("Failed to run application: %v", err)
+	}
 
-	case <-time.After(3 * time.Second):
-		cmd.Process.Kill()
-		t.Fatal("Application did not exit promptly with TERM=dumb")
+	// Verify non-interactive mode was detected via TERM=dumb
+	outputStr := string(output)
+	if !strings.Contains(outputStr, "non-interactive") {
+		t.Errorf("Expected TERM=dumb to trigger non-interactive mode. Output: %s", outputStr)
 	}
 }

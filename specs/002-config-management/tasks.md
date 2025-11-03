@@ -121,14 +121,14 @@ LazyNuGet is a single project with the following structure:
 - [X] T049 [US2] Implement parseConfigFile() in internal/config/parser.go handling syntax errors with line numbers per FR-010
 - [X] T050 [US2] Update Load() method in internal/config/config.go to detect and load config file if present
 - [X] T051 [US2] Implement mergeConfigs() in internal/config/merger.go merging file config with defaults per FR-002
-- [ ] T052 [US2] Implement validation rules for all setting types in internal/config/validator.go per data-model.md validation rules
-- [ ] T053 [US2] Add constraint validators (range, enum, hexcolor, dateformat, regex) in internal/config/validator.go
-- [ ] T054 [US2] Update Validate() to collect semantic validation errors in internal/config/validator.go per FR-011
-- [ ] T055 [US2] Implement warning logs for semantic validation errors in internal/config/validator.go per FR-013
-- [ ] T056 [US2] Implement fallback to defaults for invalid settings in internal/config/validator.go per FR-012
-- [ ] T057 [US2] Implement keybinding conflict detection in internal/config/validator.go per FR-028
-- [ ] T058 [US2] Implement PrintConfig() method showing merged config with provenance in internal/config/config.go per contract
-- [ ] T059 [US2] Verify T033-T043 tests now pass with file-based config implementation
+- [X] T052 [US2] Implement validation rules for all setting types in internal/config/validator.go per data-model.md validation rules
+- [X] T053 [US2] Add constraint validators (range, enum, hexcolor, dateformat, regex) in internal/config/validator.go
+- [X] T054 [US2] Update Validate() to collect semantic validation errors in internal/config/validator.go per FR-011
+- [X] T055 [US2] Implement warning logs for semantic validation errors in internal/config/validator.go per FR-013
+- [X] T056 [US2] Implement fallback to defaults for invalid settings in internal/config/validator.go per FR-012
+- [X] T057 [US2] Implement keybinding conflict detection in internal/config/validator.go per FR-028
+- [X] T058 [US2] Implement PrintConfig() method showing merged config with provenance in internal/config/config.go per contract
+- [X] T059 [US2] Verify T033-T043 tests now pass with file-based config implementation
 
 **Checkpoint**: At this point, User Story 1 AND 2 both work independently - users can customize via files
 

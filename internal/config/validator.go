@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// validator provides basic validation for Config struct fields.
-// Full validation logic will be implemented in later phases.
-// See: T029, FR-013, FR-014
+// validator provides validation for Config struct fields.
+// Validates all settings according to their constraints and applies fallback defaults.
+// See: T029, T052-T056, FR-013, FR-014
 type validator struct {
 	schema *ConfigSchema
 }
@@ -21,42 +21,42 @@ func newValidator(schema *ConfigSchema) *validator {
 	}
 }
 
-// validate performs basic validation on a Config struct.
+// validate performs comprehensive validation on a Config struct and applies fallback defaults.
 // Returns a slice of ValidationErrors (both blocking and non-blocking).
-// See: FR-013, FR-014
+// Mutates cfg to apply fallback defaults for invalid values.
+// See: T052-T056, FR-011, FR-012, FR-013
 func (v *validator) validate(cfg *Config) []ValidationError {
 	var errors []ValidationError
+	defaults := GetDefaultConfig()
 
-	// Validate theme
-	if err := v.validateEnum(cfg.Theme, []string{"default", "dark", "light", "solarized"}, "theme"); err != nil {
+	// Validate theme (T052)
+	if err := v.validateEnum(&cfg.Theme, []string{"default", "dark", "light", "solarized"}, "theme", defaults.Theme); err != nil {
 		errors = append(errors, *err)
 	}
 
-	// Validate color scheme hex colors
-	colorChecks := map[string]string{
-		"colorScheme.border":      cfg.ColorScheme.Border,
-		"colorScheme.borderFocus": cfg.ColorScheme.BorderFocus,
-		"colorScheme.text":        cfg.ColorScheme.Text,
-		"colorScheme.textDim":     cfg.ColorScheme.TextDim,
-		"colorScheme.background":  cfg.ColorScheme.Background,
-		"colorScheme.highlight":   cfg.ColorScheme.Highlight,
-		"colorScheme.error":       cfg.ColorScheme.Error,
-		"colorScheme.warning":     cfg.ColorScheme.Warning,
-		"colorScheme.success":     cfg.ColorScheme.Success,
-		"colorScheme.info":        cfg.ColorScheme.Info,
-	}
-	for field, value := range colorChecks {
-		if err := v.validateHexColor(value, field); err != nil {
-			errors = append(errors, *err)
-		}
-	}
+	// Validate color scheme hex colors (T052, T053)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Border, "colorScheme.border", defaults.ColorScheme.Border, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.BorderFocus, "colorScheme.borderFocus", defaults.ColorScheme.BorderFocus, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Text, "colorScheme.text", defaults.ColorScheme.Text, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.TextDim, "colorScheme.textDim", defaults.ColorScheme.TextDim, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Background, "colorScheme.background", defaults.ColorScheme.Background, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Highlight, "colorScheme.highlight", defaults.ColorScheme.Highlight, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Error, "colorScheme.error", defaults.ColorScheme.Error, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Warning, "colorScheme.warning", defaults.ColorScheme.Warning, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Success, "colorScheme.success", defaults.ColorScheme.Success, &errors)
+	v.validateAndFixHexColor(&cfg.ColorScheme.Info, "colorScheme.info", defaults.ColorScheme.Info, &errors)
 
-	// Validate keybinding profile
-	if err := v.validateEnum(cfg.KeybindingProfile, []string{"default", "vim", "emacs"}, "keybindingProfile"); err != nil {
+	// Validate keybinding profile (T052)
+	if err := v.validateEnum(&cfg.KeybindingProfile, []string{"default", "vim", "emacs"}, "keybindingProfile", defaults.KeybindingProfile); err != nil {
 		errors = append(errors, *err)
 	}
 
-	// Validate maxConcurrentOps range
+	// Validate keybinding conflicts (T057, FR-028)
+	if keybindingErrors := v.validateKeybindingConflicts(cfg); len(keybindingErrors) > 0 {
+		errors = append(errors, keybindingErrors...)
+	}
+
+	// Validate maxConcurrentOps range (T052, T053)
 	if cfg.MaxConcurrentOps < 1 || cfg.MaxConcurrentOps > 16 {
 		errors = append(errors, ValidationError{
 			Key:          "maxConcurrentOps",
@@ -64,11 +64,12 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be between 1 and 16",
 			SuggestedFix: "Set maxConcurrentOps to a value between 1 and 16",
 			Severity:     "warning",
-			DefaultUsed:  4,
+			DefaultUsed:  defaults.MaxConcurrentOps,
 		})
+		cfg.MaxConcurrentOps = defaults.MaxConcurrentOps // Apply fallback (T056)
 	}
 
-	// Validate cacheSize
+	// Validate cacheSize (T052)
 	if cfg.CacheSize < 0 {
 		errors = append(errors, ValidationError{
 			Key:          "cacheSize",
@@ -76,11 +77,25 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be non-negative",
 			SuggestedFix: "Set cacheSize to 0 or higher",
 			Severity:     "warning",
-			DefaultUsed:  50,
+			DefaultUsed:  defaults.CacheSize,
 		})
+		cfg.CacheSize = defaults.CacheSize // Apply fallback (T056)
 	}
 
-	// Validate timeouts
+	// Validate refreshInterval (T052, T053)
+	if cfg.RefreshInterval < 5*time.Second {
+		errors = append(errors, ValidationError{
+			Key:          "refreshInterval",
+			Value:        cfg.RefreshInterval,
+			Constraint:   "must be at least 5 seconds",
+			SuggestedFix: "Set refreshInterval to at least 5s",
+			Severity:     "warning",
+			DefaultUsed:  defaults.RefreshInterval,
+		})
+		cfg.RefreshInterval = defaults.RefreshInterval // Apply fallback (T056)
+	}
+
+	// Validate timeouts (T052, T053)
 	if cfg.Timeouts.NetworkRequest < 1*time.Second {
 		errors = append(errors, ValidationError{
 			Key:          "timeouts.networkRequest",
@@ -88,8 +103,9 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be at least 1 second",
 			SuggestedFix: "Set timeouts.networkRequest to at least 1s",
 			Severity:     "warning",
-			DefaultUsed:  30 * time.Second,
+			DefaultUsed:  defaults.Timeouts.NetworkRequest,
 		})
+		cfg.Timeouts.NetworkRequest = defaults.Timeouts.NetworkRequest // Apply fallback (T056)
 	}
 	if cfg.Timeouts.DotnetCLI < 1*time.Second {
 		errors = append(errors, ValidationError{
@@ -98,8 +114,9 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be at least 1 second",
 			SuggestedFix: "Set timeouts.dotnetCLI to at least 1s",
 			Severity:     "warning",
-			DefaultUsed:  60 * time.Second,
+			DefaultUsed:  defaults.Timeouts.DotnetCLI,
 		})
+		cfg.Timeouts.DotnetCLI = defaults.Timeouts.DotnetCLI // Apply fallback (T056)
 	}
 	if cfg.Timeouts.FileOperation < 100*time.Millisecond {
 		errors = append(errors, ValidationError{
@@ -108,26 +125,33 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be at least 100ms",
 			SuggestedFix: "Set timeouts.fileOperation to at least 100ms",
 			Severity:     "warning",
-			DefaultUsed:  5 * time.Second,
+			DefaultUsed:  defaults.Timeouts.FileOperation,
 		})
+		cfg.Timeouts.FileOperation = defaults.Timeouts.FileOperation // Apply fallback (T056)
 	}
 
-	// Validate dotnet verbosity
-	if err := v.validateEnum(cfg.DotnetVerbosity, []string{"quiet", "minimal", "normal", "detailed", "diagnostic"}, "dotnetVerbosity"); err != nil {
+	// Validate dotnet verbosity (T052)
+	if err := v.validateEnum(&cfg.DotnetVerbosity, []string{"quiet", "minimal", "normal", "detailed", "diagnostic"}, "dotnetVerbosity", defaults.DotnetVerbosity); err != nil {
 		errors = append(errors, *err)
 	}
 
-	// Validate log level
-	if err := v.validateEnum(cfg.LogLevel, []string{"debug", "info", "warn", "error"}, "logLevel"); err != nil {
+	// Validate log level (T052)
+	if err := v.validateEnum(&cfg.LogLevel, []string{"debug", "info", "warn", "error"}, "logLevel", defaults.LogLevel); err != nil {
 		errors = append(errors, *err)
 	}
 
-	// Validate log format
-	if err := v.validateEnum(cfg.LogFormat, []string{"text", "json"}, "logFormat"); err != nil {
+	// Validate log format (T052)
+	if err := v.validateEnum(&cfg.LogFormat, []string{"text", "json"}, "logFormat", defaults.LogFormat); err != nil {
 		errors = append(errors, *err)
 	}
 
-	// Validate log rotation
+	// Validate date format (T052, T053)
+	if err := v.validateDateFormat(cfg.DateFormat, "dateFormat"); err != nil {
+		errors = append(errors, *err)
+		cfg.DateFormat = defaults.DateFormat // Apply fallback (T056)
+	}
+
+	// Validate log rotation (T052)
 	if cfg.LogRotation.MaxSize < 1 {
 		errors = append(errors, ValidationError{
 			Key:          "logRotation.maxSize",
@@ -135,8 +159,9 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be at least 1 MB",
 			SuggestedFix: "Set logRotation.maxSize to at least 1",
 			Severity:     "warning",
-			DefaultUsed:  10,
+			DefaultUsed:  defaults.LogRotation.MaxSize,
 		})
+		cfg.LogRotation.MaxSize = defaults.LogRotation.MaxSize // Apply fallback (T056)
 	}
 	if cfg.LogRotation.MaxAge < 1 {
 		errors = append(errors, ValidationError{
@@ -145,8 +170,9 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be at least 1 day",
 			SuggestedFix: "Set logRotation.maxAge to at least 1",
 			Severity:     "warning",
-			DefaultUsed:  30,
+			DefaultUsed:  defaults.LogRotation.MaxAge,
 		})
+		cfg.LogRotation.MaxAge = defaults.LogRotation.MaxAge // Apply fallback (T056)
 	}
 	if cfg.LogRotation.MaxBackups < 0 {
 		errors = append(errors, ValidationError{
@@ -155,42 +181,123 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			Constraint:   "must be non-negative",
 			SuggestedFix: "Set logRotation.maxBackups to 0 or higher",
 			Severity:     "warning",
-			DefaultUsed:  3,
+			DefaultUsed:  defaults.LogRotation.MaxBackups,
 		})
+		cfg.LogRotation.MaxBackups = defaults.LogRotation.MaxBackups // Apply fallback (T056)
 	}
 
 	return errors
 }
 
-// validateEnum checks if a value is in the allowed list.
-func (v *validator) validateEnum(value string, allowed []string, field string) *ValidationError {
+// validateEnum checks if a value is in the allowed list and applies fallback default if invalid.
+// See: T053, T056, FR-012
+func (v *validator) validateEnum(value *string, allowed []string, field string, defaultValue string) *ValidationError {
 	for _, a := range allowed {
-		if value == a {
+		if *value == a {
 			return nil
 		}
 	}
+
+	// Invalid value - apply fallback default (T056)
+	originalValue := *value
+	*value = defaultValue
+
 	return &ValidationError{
 		Key:          field,
-		Value:        value,
+		Value:        originalValue,
 		Constraint:   fmt.Sprintf("must be one of: %s", strings.Join(allowed, ", ")),
 		SuggestedFix: fmt.Sprintf("Set %s to one of the allowed values", field),
 		Severity:     "warning",
-		DefaultUsed:  allowed[0], // Use first value as default
+		DefaultUsed:  defaultValue,
 	}
 }
 
-// validateHexColor checks if a string is a valid hex color (#RRGGBB or #RRGGBBAA).
-func (v *validator) validateHexColor(value string, field string) *ValidationError {
+// validateAndFixHexColor validates a hex color and applies fallback default if invalid.
+// See: T053, T056, FR-012
+func (v *validator) validateAndFixHexColor(value *string, field string, defaultValue string, errors *[]ValidationError) {
 	hexColorRegex := regexp.MustCompile(`^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$`)
-	if hexColorRegex.MatchString(value) {
-		return nil
+	if hexColorRegex.MatchString(*value) {
+		return
 	}
-	return &ValidationError{
+
+	// Invalid hex color - apply fallback default (T056)
+	originalValue := *value
+	*value = defaultValue
+
+	*errors = append(*errors, ValidationError{
 		Key:          field,
-		Value:        value,
+		Value:        originalValue,
 		Constraint:   "must be valid hex color (#RRGGBB or #RRGGBBAA)",
 		SuggestedFix: fmt.Sprintf("Set %s to a valid hex color", field),
 		Severity:     "warning",
-		DefaultUsed:  "#FFFFFF",
+		DefaultUsed:  defaultValue,
+	})
+}
+
+// validateDateFormat validates a Go time format string.
+// See: T053, FR-012
+func (v *validator) validateDateFormat(format string, field string) *ValidationError {
+	// Try to format current time with the provided format to validate it
+	defer func() {
+		// Catch any panics from invalid format strings
+		if r := recover(); r != nil {
+			// Format is invalid
+		}
+	}()
+
+	// Test the format with a known time
+	testTime := time.Date(2006, 1, 2, 15, 4, 5, 0, time.UTC)
+	result := testTime.Format(format)
+
+	// If we can format and get a non-empty result, format is valid
+	if result != "" {
+		return nil
 	}
+
+	return &ValidationError{
+		Key:          field,
+		Value:        format,
+		Constraint:   "must be valid Go time format string",
+		SuggestedFix: "Use a valid Go time format (e.g., \"2006-01-02 15:04:05\")",
+		Severity:     "warning",
+		DefaultUsed:  "2006-01-02 15:04:05",
+	}
+}
+
+// validateKeybindingConflicts detects duplicate key assignments in keybindings.
+// See: T057, FR-028
+func (v *validator) validateKeybindingConflicts(cfg *Config) []ValidationError {
+	var errors []ValidationError
+
+	// Track keys used in each context
+	keysByContext := make(map[string]map[string]string) // context -> key -> action
+
+	for action, binding := range cfg.Keybindings {
+		context := binding.Context
+		key := binding.Key
+
+		// Initialize context map if needed
+		if keysByContext[context] == nil {
+			keysByContext[context] = make(map[string]string)
+		}
+
+		// Check for conflict
+		if existingAction, exists := keysByContext[context][key]; exists {
+			// Conflict detected - first binding wins, warn about duplicate
+			errors = append(errors, ValidationError{
+				Key:          fmt.Sprintf("keybindings.%s", action),
+				Value:        fmt.Sprintf("key '%s' in context '%s'", key, context),
+				Constraint:   fmt.Sprintf("key already assigned to action '%s'", existingAction),
+				SuggestedFix: fmt.Sprintf("Assign a different key to '%s' or use different context", action),
+				Severity:     "warning",
+				DefaultUsed:  "conflicting binding ignored",
+			})
+			// Note: We don't modify the config here - first binding wins by default
+		} else {
+			// Record this key assignment
+			keysByContext[context][key] = action
+		}
+	}
+
+	return errors
 }

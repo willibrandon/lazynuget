@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // ConfigLoader is the primary interface for loading and managing application configuration.
@@ -263,9 +264,83 @@ func (cl *configLoader) GetDefaults() *Config {
 }
 
 // PrintConfig implements ConfigLoader.PrintConfig()
-// STUB: Will be fully implemented in later phase
-// See: FR-055
+// Returns a human-readable representation of the configuration with provenance.
+// See: T058, FR-055
 func (cl *configLoader) PrintConfig(cfg *Config) string {
-	// TODO: Implement in Phase 9 (polish)
-	return "Config printing not yet implemented"
+	var sb strings.Builder
+
+	sb.WriteString("=== LazyNuGet Configuration ===\n\n")
+
+	// Config source
+	if cfg.LoadedFrom != "" {
+		sb.WriteString(fmt.Sprintf("Loaded from: %s\n", cfg.LoadedFrom))
+	} else {
+		sb.WriteString("Loaded from: defaults only\n")
+	}
+	sb.WriteString(fmt.Sprintf("Loaded at: %s\n\n", cfg.LoadedAt.Format("2006-01-02 15:04:05")))
+
+	// UI Settings
+	sb.WriteString("--- UI Settings ---\n")
+	sb.WriteString(fmt.Sprintf("theme:            %s\n", cfg.Theme))
+	sb.WriteString(fmt.Sprintf("compactMode:      %v\n", cfg.CompactMode))
+	sb.WriteString(fmt.Sprintf("showHints:        %v\n", cfg.ShowHints))
+	sb.WriteString(fmt.Sprintf("showLineNumbers:  %v\n", cfg.ShowLineNumbers))
+	sb.WriteString(fmt.Sprintf("dateFormat:       %s\n\n", cfg.DateFormat))
+
+	// Color Scheme
+	sb.WriteString("--- Color Scheme ---\n")
+	sb.WriteString(fmt.Sprintf("border:           %s\n", cfg.ColorScheme.Border))
+	sb.WriteString(fmt.Sprintf("borderFocus:      %s\n", cfg.ColorScheme.BorderFocus))
+	sb.WriteString(fmt.Sprintf("text:             %s\n", cfg.ColorScheme.Text))
+	sb.WriteString(fmt.Sprintf("textDim:          %s\n", cfg.ColorScheme.TextDim))
+	sb.WriteString(fmt.Sprintf("background:       %s\n", cfg.ColorScheme.Background))
+	sb.WriteString(fmt.Sprintf("highlight:        %s\n", cfg.ColorScheme.Highlight))
+	sb.WriteString(fmt.Sprintf("error:            %s\n", cfg.ColorScheme.Error))
+	sb.WriteString(fmt.Sprintf("warning:          %s\n", cfg.ColorScheme.Warning))
+	sb.WriteString(fmt.Sprintf("success:          %s\n", cfg.ColorScheme.Success))
+	sb.WriteString(fmt.Sprintf("info:             %s\n\n", cfg.ColorScheme.Info))
+
+	// Keybindings
+	sb.WriteString("--- Keybindings ---\n")
+	sb.WriteString(fmt.Sprintf("keybindingProfile: %s\n", cfg.KeybindingProfile))
+	if len(cfg.Keybindings) > 0 {
+		sb.WriteString("Custom keybindings:\n")
+		for action, binding := range cfg.Keybindings {
+			sb.WriteString(fmt.Sprintf("  %s: %s (context: %s)\n", action, binding.Key, binding.Context))
+		}
+	}
+	sb.WriteString("\n")
+
+	// Performance
+	sb.WriteString("--- Performance ---\n")
+	sb.WriteString(fmt.Sprintf("maxConcurrentOps: %d\n", cfg.MaxConcurrentOps))
+	sb.WriteString(fmt.Sprintf("cacheSize:        %d MB\n", cfg.CacheSize))
+	sb.WriteString(fmt.Sprintf("refreshInterval:  %s\n\n", cfg.RefreshInterval))
+
+	// Timeouts
+	sb.WriteString("--- Timeouts ---\n")
+	sb.WriteString(fmt.Sprintf("networkRequest:   %s\n", cfg.Timeouts.NetworkRequest))
+	sb.WriteString(fmt.Sprintf("dotnetCLI:        %s\n", cfg.Timeouts.DotnetCLI))
+	sb.WriteString(fmt.Sprintf("fileOperation:    %s\n\n", cfg.Timeouts.FileOperation))
+
+	// Dotnet CLI
+	sb.WriteString("--- Dotnet CLI ---\n")
+	sb.WriteString(fmt.Sprintf("dotnetPath:       %s\n", cfg.DotnetPath))
+	sb.WriteString(fmt.Sprintf("dotnetVerbosity:  %s\n\n", cfg.DotnetVerbosity))
+
+	// Logging
+	sb.WriteString("--- Logging ---\n")
+	sb.WriteString(fmt.Sprintf("logLevel:         %s\n", cfg.LogLevel))
+	sb.WriteString(fmt.Sprintf("logDir:           %s\n", cfg.LogDir))
+	sb.WriteString(fmt.Sprintf("logFormat:        %s\n", cfg.LogFormat))
+	sb.WriteString(fmt.Sprintf("maxSize:          %d MB\n", cfg.LogRotation.MaxSize))
+	sb.WriteString(fmt.Sprintf("maxAge:           %d days\n", cfg.LogRotation.MaxAge))
+	sb.WriteString(fmt.Sprintf("maxBackups:       %d\n", cfg.LogRotation.MaxBackups))
+	sb.WriteString(fmt.Sprintf("compress:         %v\n\n", cfg.LogRotation.Compress))
+
+	// Hot Reload
+	sb.WriteString("--- Hot Reload ---\n")
+	sb.WriteString(fmt.Sprintf("hotReload:        %v\n", cfg.HotReload))
+
+	return sb.String()
 }

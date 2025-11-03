@@ -169,9 +169,7 @@ func TestSyntaxErrorBlocksStartup(t *testing.T) {
 }
 
 // TestSemanticErrorsFallbackToDefaults verifies semantic errors fallback to defaults per FR-012
-// See: T042, FR-012, FR-013
-// NOTE: This test currently expects validation to be implemented (T052-T057)
-// Until validation is complete, we verify the file loads without errors
+// See: T042, T052-T056, FR-012, FR-013
 func TestSemanticErrorsFallbackToDefaults(t *testing.T) {
 	// Get path to out_of_range.yml fixture
 	fixtureDir := filepath.Join("..", "fixtures", "configs")
@@ -204,33 +202,32 @@ func TestSemanticErrorsFallbackToDefaults(t *testing.T) {
 		t.Fatal("Expected valid config with defaults applied")
 	}
 
-	// TODO: Once validation is implemented (T052-T057), uncomment these assertions:
-	//
-	// Verify invalid values fell back to defaults
-	// defaults := config.GetDefaultConfig()
-	//
-	// maxConcurrentOps: 999 in file (out of range 1-16) should fallback to default
-	// if cfg.MaxConcurrentOps == 999 {
-	//     t.Error("Expected maxConcurrentOps to fallback to default, still has invalid value 999")
-	// }
-	// if cfg.MaxConcurrentOps != defaults.MaxConcurrentOps {
-	//     t.Errorf("Expected maxConcurrentOps to use default %d, got %d", defaults.MaxConcurrentOps, cfg.MaxConcurrentOps)
-	// }
-	//
-	// Invalid log level should fallback to default
-	// if cfg.LogLevel == "verbose" {
-	//     t.Error("Expected logLevel to fallback to default, still has invalid value 'verbose'")
-	// }
-	//
-	// Invalid color should fallback to default
-	// if cfg.ColorScheme.Border == "not-a-hex-color" {
-	//     t.Error("Expected border color to fallback to default, still has invalid value")
-	// }
+	// Verify invalid values fell back to defaults (T056)
+	defaults := config.GetDefaultConfig()
 
-	// For now, just verify the config loaded successfully
-	// Once validation is implemented, invalid values will be corrected
-	t.Log("Config loaded successfully (validation not yet implemented)")
-	t.Log("After T052-T057 are complete, this test will verify fallback behavior")
+	// maxConcurrentOps: 999 in file (out of range 1-16) should fallback to default
+	if cfg.MaxConcurrentOps == 999 {
+		t.Error("Expected maxConcurrentOps to fallback to default, still has invalid value 999")
+	}
+	if cfg.MaxConcurrentOps != defaults.MaxConcurrentOps {
+		t.Errorf("Expected maxConcurrentOps to use default %d, got %d", defaults.MaxConcurrentOps, cfg.MaxConcurrentOps)
+	}
+
+	// Invalid log level should fallback to default
+	if cfg.LogLevel == "verbose" {
+		t.Error("Expected logLevel to fallback to default, still has invalid value 'verbose'")
+	}
+	if cfg.LogLevel != defaults.LogLevel {
+		t.Errorf("Expected logLevel to use default %s, got %s", defaults.LogLevel, cfg.LogLevel)
+	}
+
+	// Invalid color should fallback to default
+	if cfg.ColorScheme.Border == "not-a-hex-color" {
+		t.Error("Expected border color to fallback to default, still has invalid value")
+	}
+	if cfg.ColorScheme.Border != defaults.ColorScheme.Border {
+		t.Errorf("Expected border color to use default %s, got %s", defaults.ColorScheme.Border, cfg.ColorScheme.Border)
+	}
 }
 
 // TestBothFormatsPresentTriggersError verifies both formats present triggers error per FR-005
