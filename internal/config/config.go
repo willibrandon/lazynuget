@@ -156,6 +156,14 @@ func applyEnvironmentVariables(cfg *AppConfig) {
 	}
 }
 
+// validationError creates a structured validation error message
+func validationError(field, constraint, currentValue string) error {
+	return fmt.Errorf("configuration validation failed:\n"+
+		"  Field: %s\n"+
+		"  Constraint: %s\n"+
+		"  Current value: %s", field, constraint, currentValue)
+}
+
 // Validate checks all configuration values against validation rules
 func (cfg *AppConfig) Validate() error {
 	// VR-006: Log level must be valid
@@ -166,29 +174,49 @@ func (cfg *AppConfig) Validate() error {
 		"error": true,
 	}
 	if !validLogLevels[strings.ToLower(cfg.LogLevel)] {
-		return fmt.Errorf("invalid log level %q: must be debug, info, warn, or error", cfg.LogLevel)
+		return validationError(
+			"logLevel",
+			"must be one of: debug, info, warn, error",
+			fmt.Sprintf("%q", cfg.LogLevel),
+		)
 	}
 
 	// VR-007: Config path must exist if specified
 	if cfg.ConfigPath != "" {
 		if _, err := os.Stat(cfg.ConfigPath); os.IsNotExist(err) {
-			return fmt.Errorf("config file not found: %s", cfg.ConfigPath)
+			return validationError(
+				"configPath",
+				"file must exist if specified",
+				fmt.Sprintf("%q (file not found)", cfg.ConfigPath),
+			)
 		}
 	}
 
 	// VR-008: Startup timeout bounds
 	if cfg.StartupTimeout < 1*time.Second || cfg.StartupTimeout > 30*time.Second {
-		return fmt.Errorf("startupTimeout must be between 1s and 30s, got %v", cfg.StartupTimeout)
+		return validationError(
+			"startupTimeout",
+			"must be between 1s and 30s",
+			fmt.Sprintf("%v", cfg.StartupTimeout),
+		)
 	}
 
 	// VR-009: Shutdown timeout bounds
 	if cfg.ShutdownTimeout < 1*time.Second || cfg.ShutdownTimeout > 10*time.Second {
-		return fmt.Errorf("shutdownTimeout must be between 1s and 10s, got %v", cfg.ShutdownTimeout)
+		return validationError(
+			"shutdownTimeout",
+			"must be between 1s and 10s",
+			fmt.Sprintf("%v", cfg.ShutdownTimeout),
+		)
 	}
 
 	// VR-010: MaxConcurrentOps bounds
 	if cfg.MaxConcurrentOps < 1 || cfg.MaxConcurrentOps > 16 {
-		return fmt.Errorf("maxConcurrentOps must be between 1 and 16, got %d", cfg.MaxConcurrentOps)
+		return validationError(
+			"maxConcurrentOps",
+			"must be between 1 and 16",
+			fmt.Sprintf("%d", cfg.MaxConcurrentOps),
+		)
 	}
 
 	// VR-011: Ensure all paths are absolute

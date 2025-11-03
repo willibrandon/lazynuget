@@ -106,7 +106,7 @@ func TestConfigValidation(t *testing.T) {
 				cfg.LogLevel = "invalid"
 			},
 			expectError: true,
-			errorMsg:    "invalid log level",
+			errorMsg:    "Field: logLevel",
 		},
 		{
 			name: "startup timeout too low",
@@ -114,7 +114,7 @@ func TestConfigValidation(t *testing.T) {
 				cfg.StartupTimeout = 500 * time.Millisecond
 			},
 			expectError: true,
-			errorMsg:    "startupTimeout must be between",
+			errorMsg:    "Field: startupTimeout",
 		},
 		{
 			name: "startup timeout too high",
@@ -122,7 +122,7 @@ func TestConfigValidation(t *testing.T) {
 				cfg.StartupTimeout = 60 * time.Second
 			},
 			expectError: true,
-			errorMsg:    "startupTimeout must be between",
+			errorMsg:    "Field: startupTimeout",
 		},
 		{
 			name: "shutdown timeout too low",
@@ -130,7 +130,7 @@ func TestConfigValidation(t *testing.T) {
 				cfg.ShutdownTimeout = 500 * time.Millisecond
 			},
 			expectError: true,
-			errorMsg:    "shutdownTimeout must be between",
+			errorMsg:    "Field: shutdownTimeout",
 		},
 		{
 			name: "max concurrent ops too low",
@@ -138,7 +138,7 @@ func TestConfigValidation(t *testing.T) {
 				cfg.MaxConcurrentOps = 0
 			},
 			expectError: true,
-			errorMsg:    "maxConcurrentOps must be between",
+			errorMsg:    "Field: maxConcurrentOps",
 		},
 		{
 			name: "max concurrent ops too high",
@@ -146,7 +146,7 @@ func TestConfigValidation(t *testing.T) {
 				cfg.MaxConcurrentOps = 100
 			},
 			expectError: true,
-			errorMsg:    "maxConcurrentOps must be between",
+			errorMsg:    "Field: maxConcurrentOps",
 		},
 	}
 

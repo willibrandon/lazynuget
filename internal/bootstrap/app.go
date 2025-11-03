@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -119,6 +121,10 @@ func (app *App) Bootstrap(flags *Flags) error {
 	app.phase = "logging"
 	// For now, log to stdout only (file logging can be added later)
 	app.logger = logging.New(app.config.LogLevel, "")
+
+	// Phase: Directory permission checking
+	app.phase = "directory-permissions"
+	app.checkDirectoryPermissions()
 
 	// Phase: Platform detection
 	app.phase = "platform"
@@ -239,4 +245,76 @@ func (app *App) RegisterShutdownHandler(name string, priority int, handler func(
 		Priority: priority,
 		Handler:  handler,
 	})
+}
+
+// checkDirectoryPermissions verifies that config directories are writable
+// If permissions are insufficient, warns and attempts to use temp directory fallback
+func (app *App) checkDirectoryPermissions() {
+	directories := []struct {
+		name string
+		path string
+	}{
+		{"config", app.config.ConfigDir},
+		{"log", app.config.LogDir},
+		{"cache", app.config.CacheDir},
+	}
+
+	for _, dir := range directories {
+		// Check if directory exists
+		info, err := os.Stat(dir.path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// Try to create the directory
+				if err := os.MkdirAll(dir.path, 0755); err != nil {
+					app.logger.Warn("Cannot create %s directory %s: %v\nFalling back to temp directory", dir.name, dir.path, err)
+					app.useTempDirectoryFallback(dir.name)
+					continue
+				}
+				app.logger.Debug("Created %s directory: %s", dir.name, dir.path)
+			} else {
+				app.logger.Warn("Cannot access %s directory %s: %v", dir.name, dir.path, err)
+				continue
+			}
+		} else if !info.IsDir() {
+			app.logger.Warn("%s path %s exists but is not a directory\nFalling back to temp directory", dir.name, dir.path)
+			app.useTempDirectoryFallback(dir.name)
+			continue
+		}
+
+		// Test write permissions by creating a temp file
+		testFile := filepath.Join(dir.path, ".lazynuget-write-test")
+		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+			app.logger.Warn("Cannot write to %s directory %s: %v\nFalling back to temp directory", dir.name, dir.path, err)
+			app.useTempDirectoryFallback(dir.name)
+			continue
+		}
+		// Clean up test file
+		os.Remove(testFile)
+
+		app.logger.Debug("%s directory verified: %s", dir.name, dir.path)
+	}
+}
+
+// useTempDirectoryFallback updates config to use temp directory for the specified type
+func (app *App) useTempDirectoryFallback(dirType string) {
+	tempBase := os.TempDir()
+	fallbackPath := filepath.Join(tempBase, "lazynuget", dirType)
+
+	// Create the fallback directory
+	if err := os.MkdirAll(fallbackPath, 0755); err != nil {
+		app.logger.Error("Cannot create fallback %s directory %s: %v", dirType, fallbackPath, err)
+		return
+	}
+
+	// Update config with fallback path
+	switch dirType {
+	case "config":
+		app.config.ConfigDir = fallbackPath
+	case "log":
+		app.config.LogDir = fallbackPath
+	case "cache":
+		app.config.CacheDir = fallbackPath
+	}
+
+	app.logger.Info("Using fallback %s directory: %s", dirType, fallbackPath)
 }

@@ -179,9 +179,9 @@ LazyNuGet uses single project structure with Go conventions:
 - [X] T063 [P] [US5] Implement error wrapping in `App.Bootstrap()` for each initialization phase (config, logger, platform) with clear error messages
 - [X] T064 [P] [US5] Implement dotnet CLI validation in `internal/platform/detect.go` with `ValidateDotnetCLI() error` function (check PATH, run `dotnet --version`)
 - [X] T065 [US5] Add dotnet validation to `App.Bootstrap()` after platform initialization (make it async and non-blocking per research.md Layer 2 optimization)
-- [ ] T066 [US5] Implement config validation error formatting in `config.Validate()` with field name, constraint, and current value in error message
+- [X] T066 [US5] Implement config validation error formatting in `config.Validate()` with field name, constraint, and current value in error message
 - [X] T067 [US5] Add YAML parse error handling in `config.Load()` with line/column information from parser
-- [ ] T068 [US5] Add config directory permission checking in `App.Bootstrap()` (warn if cannot create, use temp directory fallback)
+- [X] T068 [US5] Add config directory permission checking in `App.Bootstrap()` (warn if cannot create, use temp directory fallback)
 - [X] T069 [US5] Update error logging in panic recovery layers to write to stderr and log file (if logger initialized)
 - [X] T070 [US5] Add exit code constants in `cmd/lazynuget/main.go` (ExitSuccess=0, ExitUserError=1, ExitSystemError=2) and use consistently
 
