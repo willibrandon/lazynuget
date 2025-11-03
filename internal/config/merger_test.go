@@ -28,8 +28,8 @@ func TestMergeConfigs(t *testing.T) {
 			},
 		},
 		{
-			name: "empty override keeps defaults",
-			base: GetDefaultConfig(),
+			name:     "empty override keeps defaults",
+			base:     GetDefaultConfig(),
 			override: &Config{},
 			want: map[string]interface{}{
 				"LogLevel":         GetDefaultConfig().LogLevel,

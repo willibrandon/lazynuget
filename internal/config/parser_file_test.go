@@ -142,9 +142,9 @@ func TestValidateFileSize(t *testing.T) {
 // TestCheckMultipleFormats tests detection of multiple config file formats
 func TestCheckMultipleFormats(t *testing.T) {
 	tests := []struct {
-		name      string
-		files     []string
-		wantErr   bool
+		name        string
+		files       []string
+		wantErr     bool
 		errContains string
 	}{
 		{

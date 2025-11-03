@@ -135,8 +135,8 @@ theme: dark
 			wantErr: false, // YAML parser is lenient with indentation
 		},
 		{
-			name: "empty YAML",
-			yaml: ``,
+			name:    "empty YAML",
+			yaml:    ``,
 			wantErr: true, // Empty YAML returns EOF error
 		},
 		{

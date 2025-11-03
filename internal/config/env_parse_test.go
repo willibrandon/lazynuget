@@ -29,13 +29,13 @@ func TestParseEnvVars(t *testing.T) {
 		{
 			name: "parse nested env vars",
 			envVars: map[string]string{
-				"LAZYNUGET_COLOR_SCHEME_BORDER": "#CUSTOM",
+				"LAZYNUGET_COLOR_SCHEME_BORDER":      "#CUSTOM",
 				"LAZYNUGET_TIMEOUTS_NETWORK_REQUEST": "60s",
 			},
 			prefix: "LAZYNUGET_",
 			wantVars: map[string]string{
-				"colorScheme.border":        "#CUSTOM",
-				"timeouts.networkRequest":   "60s",
+				"colorScheme.border":      "#CUSTOM",
+				"timeouts.networkRequest": "60s",
 			},
 		},
 		{
@@ -53,8 +53,8 @@ func TestParseEnvVars(t *testing.T) {
 		{
 			name: "ignore env vars without prefix",
 			envVars: map[string]string{
-				"PATH":                  "/usr/bin",
-				"HOME":                  "/home/user",
+				"PATH":                "/usr/bin",
+				"HOME":                "/home/user",
 				"LAZYNUGET_LOG_LEVEL": "debug",
 			},
 			prefix: "LAZYNUGET_",
@@ -65,7 +65,7 @@ func TestParseEnvVars(t *testing.T) {
 		{
 			name: "LAZYNUGET_CONFIG is parsed like any other",
 			envVars: map[string]string{
-				"LAZYNUGET_CONFIG":     "/path/to/config",
+				"LAZYNUGET_CONFIG":    "/path/to/config",
 				"LAZYNUGET_LOG_LEVEL": "debug",
 			},
 			prefix: "LAZYNUGET_",
@@ -75,8 +75,8 @@ func TestParseEnvVars(t *testing.T) {
 			},
 		},
 		{
-			name:     "no matching env vars",
-			envVars:  map[string]string{
+			name: "no matching env vars",
+			envVars: map[string]string{
 				"PATH": "/usr/bin",
 				"HOME": "/home/user",
 			},
