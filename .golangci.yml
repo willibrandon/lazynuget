@@ -1,0 +1,74 @@
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters-settings:
+  gofumpt:
+    extra-rules: true
+
+  govet:
+    enable-all: true
+
+  staticcheck:
+    checks: ["all"]
+
+  revive:
+    rules:
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: context-as-argument
+      - name: early-return
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+linters:
+  disable-all: true
+  enable:
+    # Modern essential linters
+    - gofumpt        # Stricter gofmt
+    - goimports      # Import management
+    - govet          # Built-in static analysis
+    - staticcheck    # Advanced static analysis
+    - errcheck       # Check error returns
+    - gosimple       # Simplify code
+    - ineffassign    # Detect ineffective assignments
+    - unused         # Find unused code
+
+    # Modern code quality
+    - revive         # Fast, configurable linter (modern golint replacement)
+    - misspell       # Spell checker
+    - unconvert      # Remove unnecessary conversions
+    - unparam        # Find unused function parameters
+    - wastedassign   # Find wasted assignments
+    - whitespace     # Whitespace issues
+
+    # Modern security
+    - gosec          # Security checker
+
+    # Modern style
+    - gci            # Import ordering
+    - gofmt          # Format check (backup to gofumpt)
+    - errorlint      # Error wrapping linter
+    - nilerr         # Find nil error returns
+
+  # Explicitly disable deprecated linters
+  # (golangci-lint won't enable them, but we document why)
+  # - golint        # DEPRECATED: replaced by revive
+  # - interfacer    # ARCHIVED
+  # - maligned      # ARCHIVED: replaced by govet fieldalignment
+  # - scopelint     # DEPRECATED: replaced by exportloopref
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Exclude some linters from test files
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec

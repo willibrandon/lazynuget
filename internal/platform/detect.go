@@ -6,10 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
-
-	"github.com/willibrandon/lazynuget/internal/config"
-	"github.com/willibrandon/lazynuget/internal/logging"
 )
 
 // Platform provides platform-specific information and utilities.
@@ -37,7 +35,7 @@ func (p *platformImpl) Arch() string {
 
 // New creates a new Platform instance.
 // For now, this is a stub that returns basic runtime information.
-func New(cfg *config.AppConfig, log logging.Logger) Platform {
+func New() Platform {
 	return &platformImpl{
 		os:   runtime.GOOS,
 		arch: runtime.GOARCH,
@@ -78,7 +76,7 @@ func Detect() *PlatformInfo {
 // Travis CI, CircleCI, Jenkins, and others.
 func detectCI() bool {
 	ciEnvVars := []string{
-		"CI",           // Generic CI indicator
+		"CI", // Generic CI indicator
 		"CONTINUOUS_INTEGRATION",
 		"BUILD_NUMBER", // Jenkins
 		"GITLAB_CI",
@@ -162,8 +160,17 @@ func ValidateDotnetCLI() error {
 			"  • Linux: https://docs.microsoft.com/dotnet/core/install/linux")
 	}
 
+	// Validate that the found executable is actually named dotnet (security check)
+	expectedNames := []string{"dotnet", "dotnet.exe"}
+	baseName := strings.ToLower(dotnetPath[strings.LastIndex(dotnetPath, string(os.PathSeparator))+1:])
+	if !slices.Contains(expectedNames, baseName) {
+		return fmt.Errorf("found executable %s does not appear to be dotnet CLI\n"+
+			"Expected 'dotnet' or 'dotnet.exe', but found: %s", dotnetPath, baseName)
+	}
+
 	// Verify dotnet works by running --version
-	cmd := exec.Command(dotnetPath, "--version")
+	// Use "dotnet" directly (not the full path) since we've validated it exists in PATH
+	cmd := exec.Command("dotnet", "--version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("dotnet CLI found at %s but failed to execute: %w\n"+

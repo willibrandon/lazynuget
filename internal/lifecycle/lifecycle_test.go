@@ -13,19 +13,19 @@ type mockLogger struct {
 	logs []string
 }
 
-func (m *mockLogger) Info(format string, args ...interface{}) {
+func (m *mockLogger) Info(format string, args ...any) {
 	m.logs = append(m.logs, fmt.Sprintf("INFO: "+format, args...))
 }
 
-func (m *mockLogger) Debug(format string, args ...interface{}) {
+func (m *mockLogger) Debug(format string, args ...any) {
 	m.logs = append(m.logs, fmt.Sprintf("DEBUG: "+format, args...))
 }
 
-func (m *mockLogger) Warn(format string, args ...interface{}) {
+func (m *mockLogger) Warn(format string, args ...any) {
 	m.logs = append(m.logs, fmt.Sprintf("WARN: "+format, args...))
 }
 
-func (m *mockLogger) Error(format string, args ...interface{}) {
+func (m *mockLogger) Error(format string, args ...any) {
 	m.logs = append(m.logs, fmt.Sprintf("ERROR: "+format, args...))
 }
 
@@ -125,7 +125,7 @@ func TestShutdownHandlerPriority(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "high-priority",
 		Priority: 10,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			executionOrder = append(executionOrder, "high-priority")
 			return nil
 		},
@@ -134,7 +134,7 @@ func TestShutdownHandlerPriority(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "low-priority",
 		Priority: 100,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			executionOrder = append(executionOrder, "low-priority")
 			return nil
 		},
@@ -143,7 +143,7 @@ func TestShutdownHandlerPriority(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "medium-priority",
 		Priority: 50,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			executionOrder = append(executionOrder, "medium-priority")
 			return nil
 		},
@@ -176,7 +176,7 @@ func TestShutdownHandlerErrors(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "failing-handler",
 		Priority: 100,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			return errors.New("intentional failure")
 		},
 	})
@@ -185,7 +185,7 @@ func TestShutdownHandlerErrors(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "success-handler",
 		Priority: 200,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			successCalled = true
 			return nil
 		},
@@ -213,7 +213,7 @@ func TestShutdownHandlerPanic(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "panicking-handler",
 		Priority: 100,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			panic("intentional panic")
 		},
 	})
@@ -222,7 +222,7 @@ func TestShutdownHandlerPanic(t *testing.T) {
 	mgr.RegisterShutdownHandler(ShutdownHandler{
 		Name:     "success-handler",
 		Priority: 200,
-		Handler: func(ctx context.Context) error {
+		Handler: func(context.Context) error {
 			successCalled = true
 			return nil
 		},
@@ -268,20 +268,24 @@ func TestGetState(t *testing.T) {
 func TestConcurrentStateAccess(t *testing.T) {
 	mgr := NewManager(30 * time.Second)
 
-	mgr.SetState(StateInitializing)
-	mgr.SetState(StateRunning)
+	if err := mgr.SetState(StateInitializing); err != nil {
+		t.Fatalf("Failed to set initializing state: %v", err)
+	}
+	if err := mgr.SetState(StateRunning); err != nil {
+		t.Fatalf("Failed to set running state: %v", err)
+	}
 
 	done := make(chan bool, 10)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
-			for j := 0; j < 100; j++ {
+			for range 100 {
 				_ = mgr.GetState()
 			}
 			done <- true
 		}()
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }

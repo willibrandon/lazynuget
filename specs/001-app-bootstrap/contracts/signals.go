@@ -120,16 +120,8 @@ type SignalHandler interface {
 
 // SignalHandlerConfig contains configuration for signal handling behavior.
 type SignalHandlerConfig struct {
-	// ForceQuitOnSecondSignal enables immediate exit (without cleanup) if
-	// a second signal is received while shutdown is in progress.
-	// Default: true (aligns with user expectations for Ctrl+C twice)
+	ShutdownGracePeriod     os.Signal
 	ForceQuitOnSecondSignal bool
-
-	// ShutdownGracePeriod is how long to wait for graceful shutdown before
-	// automatically restoring default signal handlers (allowing force quit).
-	// Set to 0 to disable automatic restoration.
-	// Default: 3 seconds (matches shutdown timeout from FR-009)
-	ShutdownGracePeriod os.Signal
 }
 
 // DefaultSignalHandlerConfig returns a SignalHandlerConfig with sensible defaults.
@@ -231,13 +223,13 @@ var PlatformSignals = struct {
 		// syscall.SIGTERM is supported but behavior varies
 	},
 	MacOS: []os.Signal{
-		os.Interrupt,   // Ctrl+C (SIGINT)
-		os.Kill,        // SIGKILL (cannot be caught)
+		os.Interrupt, // Ctrl+C (SIGINT)
+		os.Kill,      // SIGKILL (cannot be caught)
 		// syscall.SIGTERM, SIGHUP, etc. available via syscall package
 	},
 	Linux: []os.Signal{
-		os.Interrupt,   // Ctrl+C (SIGINT)
-		os.Kill,        // SIGKILL (cannot be caught)
+		os.Interrupt, // Ctrl+C (SIGINT)
+		os.Kill,      // SIGKILL (cannot be caught)
 		// syscall.SIGTERM, SIGHUP, etc. available via syscall package
 	},
 	Portable: []os.Signal{

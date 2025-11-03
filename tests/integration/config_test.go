@@ -26,7 +26,7 @@ shutdownTimeout: 5s
 maxConcurrentOps: 8
 `
 
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 
@@ -88,14 +88,14 @@ func TestEnvironmentVariables(t *testing.T) {
 
 func TestConfigValidation(t *testing.T) {
 	tests := []struct {
-		name        string
 		modify      func(*config.AppConfig)
-		expectError bool
+		name        string
 		errorMsg    string
+		expectError bool
 	}{
 		{
 			name: "valid config",
-			modify: func(cfg *config.AppConfig) {
+			modify: func(*config.AppConfig) {
 				// Use defaults - should be valid
 			},
 			expectError: false,
@@ -253,7 +253,7 @@ logLevel: debug
 compactMode true  # missing colon
 `
 
-	if err := os.WriteFile(configPath, []byte(invalidYAML), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(invalidYAML), 0o644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
 

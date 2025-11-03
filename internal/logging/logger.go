@@ -13,16 +13,16 @@ import (
 // Logger provides structured logging capabilities.
 type Logger interface {
 	// Debug logs a debug message
-	Debug(format string, args ...interface{})
+	Debug(format string, args ...any)
 
 	// Info logs an informational message
-	Info(format string, args ...interface{})
+	Info(format string, args ...any)
 
 	// Warn logs a warning message
-	Warn(format string, args ...interface{})
+	Warn(format string, args ...any)
 
 	// Error logs an error message
-	Error(format string, args ...interface{})
+	Error(format string, args ...any)
 }
 
 // slogLogger wraps slog.Logger to implement our Logger interface
@@ -30,19 +30,19 @@ type slogLogger struct {
 	logger *slog.Logger
 }
 
-func (l *slogLogger) Debug(format string, args ...interface{}) {
+func (l *slogLogger) Debug(format string, args ...any) {
 	l.logger.Debug(fmt.Sprintf(format, args...))
 }
 
-func (l *slogLogger) Info(format string, args ...interface{}) {
+func (l *slogLogger) Info(format string, args ...any) {
 	l.logger.Info(fmt.Sprintf(format, args...))
 }
 
-func (l *slogLogger) Warn(format string, args ...interface{}) {
+func (l *slogLogger) Warn(format string, args ...any) {
 	l.logger.Warn(fmt.Sprintf(format, args...))
 }
 
-func (l *slogLogger) Error(format string, args ...interface{}) {
+func (l *slogLogger) Error(format string, args ...any) {
 	l.logger.Error(fmt.Sprintf(format, args...))
 }
 
@@ -75,16 +75,19 @@ func New(level, logPath string) Logger {
 
 	// If log path is specified, create multiwriter for both stdout and file
 	if logPath != "" {
-		// Ensure log directory exists
-		logDir := filepath.Dir(logPath)
-		if err := os.MkdirAll(logDir, 0755); err != nil {
+		// Validate and clean log path (security: prevent path traversal)
+		cleanLogPath := filepath.Clean(logPath)
+
+		// Ensure log directory exists (owner-only permissions for security)
+		logDir := filepath.Dir(cleanLogPath)
+		if err := os.MkdirAll(logDir, 0o700); err != nil {
 			// Fall back to stdout only if we can't create log directory
 			fmt.Fprintf(os.Stderr, "Warning: failed to create log directory %s: %v\n", logDir, err)
 		} else {
-			// Open log file (append mode)
-			file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+			// Open log file (append mode, owner-only permissions for security)
+			file, err := os.OpenFile(cleanLogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to open log file %s: %v\n", logPath, err)
+				fmt.Fprintf(os.Stderr, "Warning: failed to open log file %s: %v\n", cleanLogPath, err)
 			} else {
 				// Write to both stdout and file
 				writer = io.MultiWriter(os.Stdout, file)

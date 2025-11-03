@@ -295,15 +295,9 @@ const (
 //
 // Enable collection via DEBUG_STARTUP=1 environment variable.
 type StartupMetrics struct {
-	// TotalDuration is end-to-end time from process start to ready state.
+	PhaseTimings  map[StartupPhase]time.Duration
 	TotalDuration time.Duration
-
-	// PhaseTimings maps each StartupPhase to its duration.
-	PhaseTimings map[StartupPhase]time.Duration
-
-	// LazyGUI indicates whether GUI was initialized during startup (true)
-	// or deferred until first access (false).
-	LazyGUI bool
+	LazyGUI       bool
 }
 
 // IsSlow returns true if total duration exceeds the 200ms target.

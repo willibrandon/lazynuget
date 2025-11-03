@@ -51,7 +51,7 @@ type Lifecycle interface {
 	//   - Signal handler registration fails
 	//
 	// Corresponds to: FR-007, FR-008, FR-015
-	Start(ctx context.Context, app interface{}) error
+	Start(ctx context.Context, app any) error
 
 	// Stop initiates graceful shutdown and waits for completion.
 	//

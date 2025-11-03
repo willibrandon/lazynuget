@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 )
@@ -11,12 +12,12 @@ import (
 type State int
 
 const (
-	StateUninitialized State = iota // Before bootstrap
-	StateInitializing               // During bootstrap
-	StateRunning                    // Normal operation
-	StateShuttingDown               // Graceful shutdown in progress
-	StateShutdownComplete           // Shutdown finished
-	StateFailed                     // Fatal error occurred
+	StateUninitialized    State = iota // Before bootstrap
+	StateInitializing                  // During bootstrap
+	StateRunning                       // Normal operation
+	StateShuttingDown                  // Graceful shutdown in progress
+	StateShutdownComplete              // Shutdown finished
+	StateFailed                        // Fatal error occurred
 )
 
 func (s State) String() string {
@@ -40,18 +41,18 @@ func (s State) String() string {
 
 // Manager manages the application lifecycle state machine
 type Manager struct {
-	mu               sync.RWMutex
-	state            State
 	startTime        time.Time
 	shutdownHandlers []ShutdownHandler
+	state            State
 	shutdownTimeout  time.Duration
+	mu               sync.RWMutex
 }
 
 // ShutdownHandler is a function called during graceful shutdown
 type ShutdownHandler struct {
-	Name     string
-	Priority int // Lower numbers run first
 	Handler  func(context.Context) error
+	Name     string
+	Priority int
 }
 
 // NewManager creates a new lifecycle manager
@@ -98,8 +99,8 @@ func (m *Manager) isValidTransition(from, to State) bool {
 		StateInitializing:     {StateRunning, StateFailed},
 		StateRunning:          {StateShuttingDown, StateFailed},
 		StateShuttingDown:     {StateShutdownComplete, StateFailed},
-		StateShutdownComplete: {},        // Terminal state
-		StateFailed:           {},        // Terminal state
+		StateShutdownComplete: {}, // Terminal state
+		StateFailed:           {}, // Terminal state
 	}
 
 	allowedStates, ok := validTransitions[from]
@@ -107,13 +108,7 @@ func (m *Manager) isValidTransition(from, to State) bool {
 		return false
 	}
 
-	for _, allowed := range allowedStates {
-		if allowed == to {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(allowedStates, to)
 }
 
 // RegisterShutdownHandler adds a handler to be called during shutdown

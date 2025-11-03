@@ -26,12 +26,12 @@ func TestGracefulShutdown(t *testing.T) {
 	handler1Called := false
 	handler2Called := false
 
-	app.RegisterShutdownHandler("test-handler-1", 10, func(ctx context.Context) error {
+	app.RegisterShutdownHandler("test-handler-1", 10, func(context.Context) error {
 		handler1Called = true
 		return nil
 	})
 
-	app.RegisterShutdownHandler("test-handler-2", 20, func(ctx context.Context) error {
+	app.RegisterShutdownHandler("test-handler-2", 20, func(context.Context) error {
 		handler2Called = true
 		return nil
 	})
@@ -67,17 +67,17 @@ func TestShutdownHandlerPriority(t *testing.T) {
 	var executionOrder []string
 
 	// Register handlers in reverse priority order
-	app.RegisterShutdownHandler("high-priority", 10, func(ctx context.Context) error {
+	app.RegisterShutdownHandler("high-priority", 10, func(context.Context) error {
 		executionOrder = append(executionOrder, "high")
 		return nil
 	})
 
-	app.RegisterShutdownHandler("low-priority", 30, func(ctx context.Context) error {
+	app.RegisterShutdownHandler("low-priority", 30, func(context.Context) error {
 		executionOrder = append(executionOrder, "low")
 		return nil
 	})
 
-	app.RegisterShutdownHandler("medium-priority", 20, func(ctx context.Context) error {
+	app.RegisterShutdownHandler("medium-priority", 20, func(context.Context) error {
 		executionOrder = append(executionOrder, "medium")
 		return nil
 	})
@@ -105,8 +105,8 @@ func TestShutdownWithTimeout(t *testing.T) {
 	}
 
 	// Bootstrap
-	if err := app.Bootstrap(nil); err != nil {
-		t.Fatalf("Failed to bootstrap: %v", err)
+	if bootstrapErr := app.Bootstrap(nil); bootstrapErr != nil {
+		t.Fatalf("Failed to bootstrap: %v", bootstrapErr)
 	}
 
 	// Register a handler that takes too long (simulating hung shutdown)

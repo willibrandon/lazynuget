@@ -16,41 +16,18 @@ import (
 
 // App represents the running LazyNuGet application instance.
 type App struct {
-	// config holds merged configuration from all sources
-	config *config.AppConfig
-
-	// logger provides structured logging
-	logger logging.Logger
-
-	// platform provides platform detection and utilities
-	platform platform.Platform
-
-	// lifecycle manages application state transitions
-	lifecycle *lifecycle.Manager
-
-	// runMode determines if the app runs interactively or non-interactively
-	runMode platform.RunMode
-
-	// gui is the Bubbletea TUI program (only initialized in interactive mode)
-	gui interface{}
-
-	// ctx is the root cancellation context
-	ctx context.Context
-
-	// cancel is the cancellation function for shutdown
-	cancel context.CancelFunc
-
-	// version contains build information
-	version VersionInfo
-
-	// startTime is when the application was created
 	startTime time.Time
-
-	// guiOnce ensures GUI is initialized only once (lazy initialization)
-	guiOnce sync.Once
-
-	// phase tracks the current initialization phase for error context
-	phase string
+	logger    logging.Logger
+	platform  platform.Platform
+	gui       any
+	ctx       context.Context
+	config    *config.AppConfig
+	lifecycle *lifecycle.Manager
+	cancel    context.CancelFunc
+	version   VersionInfo
+	phase     string
+	runMode   platform.RunMode
+	guiOnce   sync.Once
 }
 
 // NewApp creates a new application instance with version information.
@@ -80,7 +57,9 @@ func (app *App) Bootstrap(flags *Flags) error {
 		if r := recover(); r != nil {
 			// Mark lifecycle as failed
 			if app.lifecycle != nil {
-				app.lifecycle.SetState(lifecycle.StateFailed)
+				if err := app.lifecycle.SetState(lifecycle.StateFailed); err != nil && app.logger != nil {
+					app.logger.Error("Failed to set lifecycle state to failed during panic recovery: %v", err)
+				}
 			}
 			if app.logger != nil {
 				app.logger.Error("PANIC during bootstrap (phase: %s): %v", app.phase, r)
@@ -112,7 +91,9 @@ func (app *App) Bootstrap(flags *Flags) error {
 
 	cfg, err := config.Load(configFlags)
 	if err != nil {
-		app.lifecycle.SetState(lifecycle.StateFailed)
+		if setErr := app.lifecycle.SetState(lifecycle.StateFailed); setErr != nil {
+			return fmt.Errorf("configuration loading failed: %w (state transition error: %w)", err, setErr)
+		}
 		return fmt.Errorf("configuration loading failed: %w", err)
 	}
 	app.config = cfg
@@ -128,7 +109,7 @@ func (app *App) Bootstrap(flags *Flags) error {
 
 	// Phase: Platform detection
 	app.phase = "platform"
-	app.platform = platform.New(app.config, app.logger)
+	app.platform = platform.New()
 
 	// Phase: Determine run mode (interactive vs non-interactive)
 	app.phase = "runmode"
@@ -179,7 +160,7 @@ func (app *App) GetRunMode() platform.RunMode {
 
 // GetGUI returns the GUI instance, initializing it lazily if in interactive mode.
 // Returns nil if in non-interactive mode.
-func (app *App) GetGUI() interface{} {
+func (app *App) GetGUI() any {
 	if !app.runMode.IsInteractive() {
 		return nil
 	}
@@ -263,33 +244,34 @@ func (app *App) checkDirectoryPermissions() {
 		// Check if directory exists
 		info, err := os.Stat(dir.path)
 		if err != nil {
-			if os.IsNotExist(err) {
-				// Try to create the directory
-				if err := os.MkdirAll(dir.path, 0755); err != nil {
-					app.logger.Warn("Cannot create %s directory %s: %v\nFalling back to temp directory", dir.name, dir.path, err)
-					app.useTempDirectoryFallback(dir.name)
-					continue
-				}
-				app.logger.Debug("Created %s directory: %s", dir.name, dir.path)
-			} else {
+			if !os.IsNotExist(err) {
 				app.logger.Warn("Cannot access %s directory %s: %v", dir.name, dir.path, err)
 				continue
 			}
+			// Try to create the directory (owner-only permissions for security)
+			if err := os.MkdirAll(dir.path, 0o700); err != nil {
+				app.logger.Warn("Cannot create %s directory %s: %v\nFalling back to temp directory", dir.name, dir.path, err)
+				app.useTempDirectoryFallback(dir.name)
+				continue
+			}
+			app.logger.Debug("Created %s directory: %s", dir.name, dir.path)
 		} else if !info.IsDir() {
 			app.logger.Warn("%s path %s exists but is not a directory\nFalling back to temp directory", dir.name, dir.path)
 			app.useTempDirectoryFallback(dir.name)
 			continue
 		}
 
-		// Test write permissions by creating a temp file
+		// Test write permissions by creating a temp file (owner-only for security)
 		testFile := filepath.Join(dir.path, ".lazynuget-write-test")
-		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		if err := os.WriteFile(testFile, []byte("test"), 0o600); err != nil {
 			app.logger.Warn("Cannot write to %s directory %s: %v\nFalling back to temp directory", dir.name, dir.path, err)
 			app.useTempDirectoryFallback(dir.name)
 			continue
 		}
 		// Clean up test file
-		os.Remove(testFile)
+		if err := os.Remove(testFile); err != nil {
+			app.logger.Debug("Failed to remove test file %s: %v (not critical)", testFile, err)
+		}
 
 		app.logger.Debug("%s directory verified: %s", dir.name, dir.path)
 	}
@@ -300,8 +282,8 @@ func (app *App) useTempDirectoryFallback(dirType string) {
 	tempBase := os.TempDir()
 	fallbackPath := filepath.Join(tempBase, "lazynuget", dirType)
 
-	// Create the fallback directory
-	if err := os.MkdirAll(fallbackPath, 0755); err != nil {
+	// Create the fallback directory (owner-only permissions for security)
+	if err := os.MkdirAll(fallbackPath, 0o700); err != nil {
 		app.logger.Error("Cannot create fallback %s directory %s: %v", dirType, fallbackPath, err)
 		return
 	}

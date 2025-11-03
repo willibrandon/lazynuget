@@ -56,17 +56,17 @@ func main() {
 		os.Exit(ExitUserError)
 	}
 
-	// In non-interactive mode, check if we should skip GUI operations
-	if app.GetRunMode().IsInteractive() {
-		// Run application and wait for shutdown signal (interactive TUI mode)
-		if err := app.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
-			os.Exit(ExitSystemError)
-		}
-	} else {
+	// In non-interactive mode, exit after successful bootstrap
+	if !app.GetRunMode().IsInteractive() {
 		// Non-interactive mode: Just exit after successful bootstrap
 		// In future, this could run specific commands passed via CLI
 		os.Exit(ExitSuccess)
+	}
+
+	// Run application and wait for shutdown signal (interactive TUI mode)
+	if err := app.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
+		os.Exit(ExitSystemError)
 	}
 
 	os.Exit(ExitSuccess)

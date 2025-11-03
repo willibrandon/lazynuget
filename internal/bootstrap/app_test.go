@@ -85,8 +85,8 @@ func TestNewApp(t *testing.T) {
 
 func TestBootstrap(t *testing.T) {
 	tests := []struct {
-		name    string
 		flags   *Flags
+		name    string
 		wantErr bool
 	}{
 		{

@@ -1,4 +1,4 @@
-.PHONY: build build-dev clean test test-int help
+.PHONY: build build-dev clean test test-int test-all coverage fmt vet lint lint-fix tidy install run help
 
 # Variables
 BINARY_NAME=lazynuget
@@ -55,19 +55,45 @@ tidy:
 	@echo "Tidying go modules..."
 	go mod tidy
 
-## fmt: Format Go code
+## fmt: Format Go code with gofumpt (stricter than gofmt)
 fmt:
-	@echo "Formatting code..."
-	go fmt ./...
+	@echo "Formatting code with gofumpt..."
+	@go run mvdan.cc/gofumpt@latest -l -w .
 
 ## vet: Run go vet
 vet:
 	@echo "Running go vet..."
 	go vet ./...
 
-## lint: Run all code quality checks
-lint: fmt vet
-	@echo "Linting complete"
+## lint: Run all modern code quality checks (read-only)
+lint:
+	@echo "Running modern linters..."
+	@echo "→ go vet"
+	@go vet ./...
+	@echo "→ gofumpt (check only)"
+	@go run mvdan.cc/gofumpt@latest -l . | tee /dev/stderr | test -z "$$(cat)"
+	@echo "→ goimports (check only)"
+	@go run golang.org/x/tools/cmd/goimports@latest -l . | tee /dev/stderr | test -z "$$(cat)"
+	@echo "→ staticcheck"
+	@go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+	@echo "→ modernize (check only)"
+	@go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest ./...
+	@echo "→ golangci-lint"
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	@echo "✓ All lint checks passed"
+
+## lint-fix: Run all automatic fixers
+lint-fix:
+	@echo "Running automatic fixers..."
+	@echo "→ gofumpt (format)"
+	@go run mvdan.cc/gofumpt@latest -l -w .
+	@echo "→ goimports (fix imports)"
+	@go run golang.org/x/tools/cmd/goimports@latest -w .
+	@echo "→ modernize (apply fixes)"
+	@go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix ./...
+	@echo "→ golangci-lint (auto-fix)"
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+	@echo "✓ All automatic fixes applied"
 
 ## install: Install binary to GOPATH/bin
 install:

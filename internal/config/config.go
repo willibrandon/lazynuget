@@ -72,12 +72,18 @@ func loadConfigFile(cfg *AppConfig) error {
 	}
 
 	// Check if file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	// Validate config path (security: prevent path traversal, ensure valid extension)
+	cleanPath := filepath.Clean(configPath)
+	if !strings.HasSuffix(strings.ToLower(cleanPath), ".yml") && !strings.HasSuffix(strings.ToLower(cleanPath), ".yaml") {
+		return fmt.Errorf("config file must have .yml or .yaml extension: %s", configPath)
+	}
+
+	if _, err := os.Stat(cleanPath); os.IsNotExist(err) {
 		return err // Return NotExist error (will be handled gracefully)
 	}
 
 	// Read file
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}

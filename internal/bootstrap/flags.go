@@ -8,10 +8,10 @@ import (
 
 // Flags holds parsed command-line flags.
 type Flags struct {
-	ShowVersion    bool
-	ShowHelp       bool
 	ConfigPath     string
 	LogLevel       string
+	ShowVersion    bool
+	ShowHelp       bool
 	NonInteractive bool
 }
 

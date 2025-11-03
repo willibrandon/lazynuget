@@ -23,7 +23,7 @@ logLevel: debug
 compactMode true  # missing colon
 `
 	configPath := filepath.Join(tmpDir, "config.yml")
-	if err := os.WriteFile(configPath, []byte(invalidYAML), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(invalidYAML), 0o644); err != nil {
 		t.Fatalf("Failed to write invalid config: %v", err)
 	}
 
@@ -129,7 +129,7 @@ startupTimeout: 100s  # Too high (max 30s)
 maxConcurrentOps: 100 # Too high (max 16)
 `
 	configPath := filepath.Join(tmpDir, "config.yml")
-	if err := os.WriteFile(configPath, []byte(invalidConfig), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(invalidConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write invalid config: %v", err)
 	}
 

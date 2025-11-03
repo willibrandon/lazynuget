@@ -30,7 +30,7 @@ func TestResourceLeakDetection(t *testing.T) {
 	t.Logf("Running %d startup/shutdown cycles...", cycles)
 
 	start := time.Now()
-	for i := 0; i < cycles; i++ {
+	for i := range cycles {
 		cmd := exec.Command("../../lazynuget-leak-test", "--version")
 		if err := cmd.Run(); err != nil {
 			t.Fatalf("Cycle %d failed: %v", i+1, err)
@@ -103,9 +103,9 @@ func TestConcurrentStartupShutdown(t *testing.T) {
 	doneCh := make(chan bool, concurrency)
 
 	start := time.Now()
-	for w := 0; w < concurrency; w++ {
-		go func(workerID int) {
-			for i := 0; i < iterationsPerWorker; i++ {
+	for range concurrency {
+		go func() {
+			for range iterationsPerWorker {
 				cmd := exec.Command("../../lazynuget-concurrent-test", "--version")
 				if err := cmd.Run(); err != nil {
 					errCh <- err
@@ -113,7 +113,7 @@ func TestConcurrentStartupShutdown(t *testing.T) {
 				}
 			}
 			doneCh <- true
-		}(w)
+		}()
 	}
 
 	// Wait for all workers

@@ -4,9 +4,8 @@ import (
 	"context"
 	"runtime/debug"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/willibrandon/lazynuget/internal/logging"
+	"golang.org/x/sync/errgroup"
 )
 
 // ErrorGroup wraps errgroup.Group with panic recovery (Layer 4)

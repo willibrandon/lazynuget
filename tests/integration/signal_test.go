@@ -118,7 +118,7 @@ func TestMultipleSignals(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	// Send multiple signals rapidly
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
 			// Process might have already exited
 			if !strings.Contains(err.Error(), "process already finished") {
