@@ -97,9 +97,8 @@ func TestMissingDotnetCLI(t *testing.T) {
 		outputChan <- string(output)
 	}()
 
-	// Give async goroutine time to execute (dotnet validation runs in background)
-	// Wait longer to ensure the async validation completes
-	time.Sleep(2 * time.Second)
+	// Give process time to start and validate dotnet
+	time.Sleep(500 * time.Millisecond)
 
 	// Kill the process
 	cmd.Process.Kill()
@@ -108,8 +107,7 @@ func TestMissingDotnetCLI(t *testing.T) {
 	// Get collected output
 	outputStr := <-outputChan
 
-	// Should log a warning about missing dotnet (async validation)
-	// Note: This is a warning, not a fatal error - app continues to run
+	// Should log a warning about missing dotnet
 	if !strings.Contains(strings.ToLower(outputStr), "dotnet") || !strings.Contains(strings.ToLower(outputStr), "warn") {
 		t.Errorf("Expected warning about missing dotnet, got: %s", outputStr)
 	}

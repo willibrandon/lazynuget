@@ -116,17 +116,15 @@ func (app *App) Bootstrap(flags *Flags) error {
 	app.runMode = platform.DetermineRunMode(app.config.NonInteractive)
 	app.logger.Info("Run mode determined: %s", app.runMode)
 
-	// Phase: Dotnet CLI validation (async, non-blocking)
+	// Phase: Dotnet CLI validation (synchronous, non-failing)
 	app.phase = "dotnet-validation"
-	// Launch dotnet validation in background - don't block startup
-	go func() {
-		if err := platform.ValidateDotnetCLI(); err != nil {
-			app.logger.Warn("Dotnet CLI validation warning: %v", err)
-			// Don't fail startup - just warn the user
-		} else {
-			app.logger.Debug("Dotnet CLI validated successfully")
-		}
-	}()
+	// Validate dotnet CLI but don't fail startup if missing
+	if err := platform.ValidateDotnetCLI(); err != nil {
+		app.logger.Warn("Dotnet CLI validation warning: %v", err)
+		// Don't fail startup - just warn the user
+	} else {
+		app.logger.Debug("Dotnet CLI validated successfully")
+	}
 
 	// Transition to running state
 	app.phase = "ready"
