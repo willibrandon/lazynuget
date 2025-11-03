@@ -26,7 +26,10 @@ type App struct {
 	// lifecycle manages application state transitions
 	lifecycle *lifecycle.Manager
 
-	// gui is the Bubbletea TUI program (to be implemented in US4)
+	// runMode determines if the app runs interactively or non-interactively
+	runMode platform.RunMode
+
+	// gui is the Bubbletea TUI program (only initialized in interactive mode)
 	gui interface{}
 
 	// ctx is the root cancellation context
@@ -69,7 +72,7 @@ func NewApp(version, commit, date string) (*App, error) {
 
 // Bootstrap initializes all application subsystems in the correct order.
 // This method implements Layer 2 panic recovery with phase tracking.
-func (app *App) Bootstrap() error {
+func (app *App) Bootstrap(flags *Flags) error {
 	// Layer 2 panic recovery: catch panics and add phase context
 	defer func() {
 		if r := recover(); r != nil {
@@ -92,7 +95,20 @@ func (app *App) Bootstrap() error {
 
 	// Phase: Config loading
 	app.phase = "config"
-	cfg, err := config.Load()
+
+	// Convert bootstrap.Flags to config.Flags
+	var configFlags *config.Flags
+	if flags != nil {
+		configFlags = &config.Flags{
+			ShowVersion:    flags.ShowVersion,
+			ShowHelp:       flags.ShowHelp,
+			ConfigPath:     flags.ConfigPath,
+			LogLevel:       flags.LogLevel,
+			NonInteractive: flags.NonInteractive,
+		}
+	}
+
+	cfg, err := config.Load(configFlags)
 	if err != nil {
 		app.lifecycle.SetState(lifecycle.StateFailed)
 		return fmt.Errorf("failed to load config: %w", err)
@@ -107,6 +123,11 @@ func (app *App) Bootstrap() error {
 	// Phase: Platform detection
 	app.phase = "platform"
 	app.platform = platform.New(app.config, app.logger)
+
+	// Phase: Determine run mode (interactive vs non-interactive)
+	app.phase = "runmode"
+	app.runMode = platform.DetermineRunMode(app.config.NonInteractive)
+	app.logger.Info("Run mode determined: %s", app.runMode)
 
 	// Transition to running state
 	app.phase = "ready"
@@ -131,6 +152,26 @@ func (app *App) GetLogger() logging.Logger {
 // GetPlatform returns the platform utilities.
 func (app *App) GetPlatform() platform.Platform {
 	return app.platform
+}
+
+// GetRunMode returns the determined run mode.
+func (app *App) GetRunMode() platform.RunMode {
+	return app.runMode
+}
+
+// GetGUI returns the GUI instance, initializing it lazily if in interactive mode.
+// Returns nil if in non-interactive mode.
+func (app *App) GetGUI() interface{} {
+	if !app.runMode.IsInteractive() {
+		return nil
+	}
+
+	app.guiOnce.Do(func() {
+		// TODO: Initialize Bubbletea TUI here when GUI is implemented
+		app.logger.Debug("GUI initialization deferred (not yet implemented)")
+	})
+
+	return app.gui
 }
 
 // Run starts the application and waits for shutdown signal

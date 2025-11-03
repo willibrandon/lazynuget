@@ -149,20 +149,20 @@ LazyNuGet uses single project structure with Go conventions:
 
 ### Implementation for User Story 4
 
-- [ ] T052 [P] [US4] Create `internal/platform/tty.go` with `IsTerminal() bool` function using golang.org/x/term.IsTerminal()
-- [ ] T053 [US4] Implement `DetermineRunMode(nonInteractiveFlag bool) RunMode` in `internal/platform/detect.go` that checks flag, TTY, and environment variables (CI, NO_COLOR, TERM=dumb)
-- [ ] T054 [US4] Add `RunMode` enum in `internal/bootstrap/types.go` (RunModeInteractive, RunModeNonInteractive)
-- [ ] T055 [US4] Update `App.Bootstrap()` to call `DetermineRunMode()` and store result in app context
-- [ ] T056 [US4] Add lazy GUI initialization in `App.GetGUI()` method using sync.Once pattern (only initialize if RunModeInteractive)
-- [ ] T057 [US4] Update `cmd/lazynuget/main.go` to check run mode before attempting GUI operations (skip GUI in non-interactive mode)
-- [ ] T058 [US4] Implement platform detection in `internal/platform/detect.go` (OS, architecture, paths) for platform-specific config directories
+- [X] T052 [P] [US4] Create `internal/platform/tty.go` with `IsTerminal() bool` function using golang.org/x/term.IsTerminal()
+- [X] T053 [US4] Implement `DetermineRunMode(nonInteractiveFlag bool) RunMode` in `internal/platform/detect.go` that checks flag, TTY, and environment variables (CI, NO_COLOR, TERM=dumb)
+- [X] T054 [US4] Add `RunMode` enum in `internal/platform/types.go` (RunModeInteractive, RunModeNonInteractive)
+- [X] T055 [US4] Update `App.Bootstrap()` to call `DetermineRunMode()` and store result in app context
+- [X] T056 [US4] Add lazy GUI initialization in `App.GetGUI()` method using sync.Once pattern (only initialize if RunModeInteractive)
+- [X] T057 [US4] Update `cmd/lazynuget/main.go` to check run mode before attempting GUI operations (skip GUI in non-interactive mode)
+- [X] T058 [US4] Implement platform detection in `internal/platform/detect.go` (OS, architecture, paths) for platform-specific config directories
 
 ### Integration Tests for User Story 4
 
-- [ ] T059 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestNonInteractiveFlagExplicit that validates --non-interactive skips TUI
-- [ ] T060 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestNonInteractiveTTYDetection that simulates piped input and validates auto-detection
-- [ ] T061 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestCIEnvironmentDetection that sets CI=true and validates non-interactive mode
-- [ ] T062 [P] [US4] Update `tests/integration/startup_test.go` with TestStartupPerformance that measures startup time and validates <200ms target (using hyperfine or custom timing)
+- [X] T059 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestNonInteractiveFlagExplicit that validates --non-interactive skips TUI
+- [X] T060 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestNonInteractiveTTYDetection that simulates piped input and validates auto-detection
+- [X] T061 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestCIEnvironmentDetection that sets CI=true and validates non-interactive mode
+- [X] T062 [P] [US4] Create `tests/integration/noninteractive_test.go` with TestStartupPerformance that measures startup time and validates <200ms target (using hyperfine or custom timing)
 
 **Checkpoint**: Non-interactive mode fully functional - TTY detection, CI mode, explicit flag all work
 

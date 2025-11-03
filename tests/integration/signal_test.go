@@ -184,10 +184,10 @@ func TestShutdownLogsPresent(t *testing.T) {
 	cmd.Wait()
 
 	// Verify startup log messages are present
-	// Note: Shutdown logs may not always be captured due to timing
+	// Note: In non-interactive mode, the app exits after bootstrap
 	expectedLogs := []string{
 		"Bootstrap complete",
-		"Application started",
+		"Run mode determined",
 	}
 
 	for _, expected := range expectedLogs {

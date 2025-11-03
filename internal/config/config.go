@@ -12,7 +12,7 @@ import (
 
 // Load creates configuration by merging sources with precedence: CLI > Env > File > Defaults
 // This is the main entry point for configuration loading
-func Load() (*AppConfig, error) {
+func Load(flags *Flags) (*AppConfig, error) {
 	// Start with defaults
 	cfg := DefaultConfig()
 
@@ -28,12 +28,31 @@ func Load() (*AppConfig, error) {
 	// Apply environment variables (overrides file)
 	applyEnvironmentVariables(cfg)
 
+	// Apply CLI flags (highest precedence)
+	if flags != nil {
+		applyCLIFlags(cfg, flags)
+	}
+
 	// Validate the merged configuration
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
 	return cfg, nil
+}
+
+// applyCLIFlags applies command-line flags to configuration.
+// CLI flags have the highest precedence in the configuration hierarchy.
+func applyCLIFlags(cfg *AppConfig, flags *Flags) {
+	if flags.ConfigPath != "" {
+		cfg.ConfigPath = flags.ConfigPath
+	}
+	if flags.LogLevel != "" {
+		cfg.LogLevel = flags.LogLevel
+	}
+	if flags.NonInteractive {
+		cfg.NonInteractive = true
+	}
 }
 
 // loadConfigFile attempts to load configuration from the default config file location

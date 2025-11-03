@@ -50,19 +50,24 @@ func main() {
 		os.Exit(ExitSuccess)
 	}
 
-	// Initialize application
-	if err := app.Bootstrap(); err != nil {
+	// Initialize application with flags
+	if err := app.Bootstrap(flags); err != nil {
 		fmt.Fprintf(os.Stderr, "Startup failed: %v\n", err)
 		os.Exit(ExitUserError)
 	}
 
-	// Run application and wait for shutdown signal
-	if err := app.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
-		os.Exit(ExitSystemError)
+	// In non-interactive mode, check if we should skip GUI operations
+	if app.GetRunMode().IsInteractive() {
+		// Run application and wait for shutdown signal (interactive TUI mode)
+		if err := app.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
+			os.Exit(ExitSystemError)
+		}
+	} else {
+		// Non-interactive mode: Just exit after successful bootstrap
+		// In future, this could run specific commands passed via CLI
+		os.Exit(ExitSuccess)
 	}
-
-	_ = flags // Flags will be used in US3 and US4
 
 	os.Exit(ExitSuccess)
 }

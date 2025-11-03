@@ -71,7 +71,7 @@ func TestEnvironmentVariables(t *testing.T) {
 	os.Setenv("CI", "true")
 
 	// Load config
-	cfg, err := config.Load()
+	cfg, err := config.Load(nil)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}
@@ -230,7 +230,7 @@ func TestConfigLoadWithMissingFile(t *testing.T) {
 	os.Unsetenv("LAZYNUGET_CONFIG")
 
 	// Load config (should succeed with defaults even if file doesn't exist)
-	cfg, err := config.Load()
+	cfg, err := config.Load(nil)
 	if err != nil {
 		t.Fatalf("Config load should succeed with defaults, got error: %v", err)
 	}
@@ -326,7 +326,7 @@ func TestNonInteractiveDetection(t *testing.T) {
 			}
 
 			// Load config
-			cfg, err := config.Load()
+			cfg, err := config.Load(nil)
 			if err != nil {
 				t.Fatalf("Failed to load config: %v", err)
 			}

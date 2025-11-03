@@ -18,7 +18,7 @@ func TestGracefulShutdown(t *testing.T) {
 	}
 
 	// Bootstrap
-	if err := app.Bootstrap(); err != nil {
+	if err := app.Bootstrap(nil); err != nil {
 		t.Fatalf("Failed to bootstrap: %v", err)
 	}
 
@@ -59,7 +59,7 @@ func TestShutdownHandlerPriority(t *testing.T) {
 	}
 
 	// Bootstrap
-	if err := app.Bootstrap(); err != nil {
+	if err := app.Bootstrap(nil); err != nil {
 		t.Fatalf("Failed to bootstrap: %v", err)
 	}
 
@@ -105,7 +105,7 @@ func TestShutdownWithTimeout(t *testing.T) {
 	}
 
 	// Bootstrap
-	if err := app.Bootstrap(); err != nil {
+	if err := app.Bootstrap(nil); err != nil {
 		t.Fatalf("Failed to bootstrap: %v", err)
 	}
 
@@ -154,7 +154,7 @@ func TestShutdownStateTransitions(t *testing.T) {
 	}
 
 	// Bootstrap should transition to Running state
-	if err := app.Bootstrap(); err != nil {
+	if err := app.Bootstrap(nil); err != nil {
 		t.Fatalf("Failed to bootstrap: %v", err)
 	}
 
