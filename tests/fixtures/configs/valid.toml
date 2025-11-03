@@ -1,0 +1,66 @@
+# Sample TOML configuration file covering all setting categories
+# This file demonstrates valid configuration for LazyNuGet
+
+version = "1.0"
+
+# UI Settings
+theme = "light"
+compact_mode = false
+show_hints = true
+show_line_numbers = false
+date_format = "Jan 02, 2006"
+
+[color_scheme]
+border = "#CCCCCC"
+border_focus = "#0066CC"
+text = "#222222"
+text_dim = "#888888"
+background = "#FFFFFF"
+highlight = "#FFCC00"
+error = "#CC0000"
+warning = "#FF9900"
+success = "#00CC00"
+info = "#0099CC"
+
+# Keybindings
+keybinding_profile = "emacs"
+
+[[keybindings.help]]
+action = "help"
+key = "?"
+description = "Show help"
+context = "global"
+
+[[keybindings.search]]
+action = "search"
+key = "/"
+description = "Search packages"
+context = "main"
+
+# Performance
+max_concurrent_ops = 6
+cache_size = 75
+refresh_interval = "60s"
+
+[timeouts]
+network_request = "45s"
+dotnet_cli = "90s"
+file_operation = "7s"
+
+# Dotnet CLI Integration
+dotnet_path = "/opt/dotnet/dotnet"
+dotnet_verbosity = "normal"
+
+# Logging
+log_level = "warn"
+log_dir = "/var/log/lazynuget"
+log_format = "text"
+
+[log_rotation]
+max_size = 15
+max_age = 45
+max_backups = 4
+compress = true
+
+# Hot-Reload
+hot_reload = false

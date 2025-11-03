@@ -1,0 +1,18 @@
+# Config file with semantic validation errors (values out of range)
+# These should trigger warnings and fallback to defaults
+
+# Out of range - should be 1-16
+maxConcurrentOps: 999
+
+# Out of range - should be at least 1 second
+timeouts:
+  networkRequest: 100ms
+  dotnetCLI: 500ms
+
+# Invalid enum value - should be one of: debug, info, warn, error
+logLevel: verbose
+
+# Invalid hex color
+colorScheme:
+  border: "not-a-hex-color"
+  error: "#GGGGGG"

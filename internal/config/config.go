@@ -3,6 +3,8 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 // ConfigLoader is the primary interface for loading and managing application configuration.
@@ -138,29 +140,104 @@ func NewConfigLoader() ConfigLoader {
 }
 
 // Load implements ConfigLoader.Load()
-// Currently handles missing config file case by returning defaults.
-// Full file loading will be implemented in later phases.
-// See: T027, T031, FR-001
+// Loads configuration from defaults, file, env vars, and CLI flags with proper precedence.
+// See: T027, T031, T050, FR-001, FR-002
 func (cl *configLoader) Load(ctx context.Context, opts LoadOptions) (*Config, error) {
-	// Log that we're using default configuration (T031)
-	if opts.Logger != nil {
-		opts.Logger.Info("No config file found, using default configuration")
-	}
-
-	// For Phase 3 (US1), we only handle the missing config file case
-	// Full file loading, env vars, and CLI flag merging will be implemented in Phases 4-6
+	// Start with defaults (lowest precedence)
 	cfg := GetDefaultConfig()
 
-	// Validate the config
-	validationErrors := cl.validator.validate(cfg)
+	// Determine config file path
+	configFilePath := opts.ConfigFilePath
+	if configFilePath == "" {
+		// Check environment variable
+		if envPath := os.Getenv(opts.EnvVarPrefix + "CONFIG"); envPath != "" {
+			configFilePath = envPath
+		} else {
+			// Use platform-specific default location
+			configFilePath = getPlatformConfigPath()
+			if configFilePath != "" {
+				// Check for config.yml or config.toml
+				yamlPath := filepath.Join(configFilePath, "config.yml")
+				tomlPath := filepath.Join(configFilePath, "config.toml")
 
-	// Log any validation warnings (semantic errors, non-blocking)
-	if opts.Logger != nil && len(validationErrors) > 0 {
-		for _, ve := range validationErrors {
-			if ve.Severity == "warning" {
-				opts.Logger.Warn("Config validation warning: %s", ve.Error())
+				if _, err := os.Stat(yamlPath); err == nil {
+					configFilePath = yamlPath
+				} else if _, err := os.Stat(tomlPath); err == nil {
+					configFilePath = tomlPath
+				} else {
+					configFilePath = "" // No config file found
+				}
 			}
 		}
+	}
+
+	// Attempt to load config file if path is specified
+	if configFilePath != "" {
+		// Check if file exists
+		if _, err := os.Stat(configFilePath); err == nil {
+			// Check for multiple formats in directory (FR-005)
+			configDir := filepath.Dir(configFilePath)
+			if err := checkMultipleFormats(configDir); err != nil {
+				// This is a blocking error
+				return nil, err
+			}
+
+			// Parse config file
+			fileCfg, err := parseConfigFile(configFilePath)
+			if err != nil {
+				// Syntax errors are blocking (FR-010)
+				return nil, fmt.Errorf("failed to load config file %s: %w", configFilePath, err)
+			}
+
+			if opts.Logger != nil {
+				opts.Logger.Info("Loaded configuration from file: %s", configFilePath)
+			}
+
+			// Merge file config with defaults
+			cfg = mergeConfigs(cfg, fileCfg)
+			cfg.LoadedFrom = configFilePath
+		} else if opts.ConfigFilePath != "" {
+			// If user explicitly specified a config file (via --config), it must exist
+			return nil, fmt.Errorf("specified config file not found: %s", configFilePath)
+		} else {
+			// No config file found at default location - use defaults
+			if opts.Logger != nil {
+				opts.Logger.Info("No config file found at default location, using defaults")
+			}
+		}
+	} else {
+		// No config file path determined - use defaults
+		if opts.Logger != nil {
+			opts.Logger.Info("No config file found, using default configuration")
+		}
+	}
+
+	// TODO: Phase 5 - Apply environment variable overrides here
+	// TODO: Phase 6 - Apply CLI flag overrides here
+
+	// Validate the final merged config
+	validationErrors := cl.validator.validate(cfg)
+
+	// Handle validation errors based on StrictMode
+	hasBlockingErrors := false
+	for _, ve := range validationErrors {
+		if ve.Severity == "error" {
+			hasBlockingErrors = true
+			if opts.Logger != nil {
+				opts.Logger.Error("Config validation error: %s", ve.Error())
+			}
+		} else if ve.Severity == "warning" {
+			if opts.Logger != nil {
+				opts.Logger.Warn("Config validation warning: %s (using default: %v)", ve.Error(), ve.DefaultUsed)
+			}
+			// Apply fallback to default for this setting
+			// This is handled by the validator returning the appropriate default
+		}
+	}
+
+	// In strict mode, blocking errors prevent startup
+	if opts.StrictMode && hasBlockingErrors {
+		return nil, fmt.Errorf("config validation failed with %d error(s)", len(validationErrors))
 	}
 
 	return cfg, nil

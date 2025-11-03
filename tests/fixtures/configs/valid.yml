@@ -1,16 +1,66 @@
-# Valid LazyNuGet configuration file
-# This file demonstrates all supported configuration options
+# Sample YAML configuration file covering all setting categories
+# This file demonstrates valid configuration for LazyNuGet
 
-# Logging configuration
+version: "1.0"
+
+# UI Settings
+theme: dark
+compactMode: true
+showHints: false
+showLineNumbers: true
+dateFormat: "2006-01-02 15:04:05"
+
+colorScheme:
+  border: "#444444"
+  borderFocus: "#00AAFF"
+  text: "#EEEEEE"
+  textDim: "#666666"
+  background: "#1A1A1A"
+  highlight: "#FFAA00"
+  error: "#FF3333"
+  warning: "#FFAA33"
+  success: "#33FF33"
+  info: "#33AAFF"
+
+# Keybindings
+keybindingProfile: vim
+
+keybindings:
+  quit:
+    action: quit
+    key: q
+    description: Quit application
+    context: global
+  refresh:
+    action: refresh
+    key: r
+    description: Refresh package list
+    context: main
+
+# Performance
+maxConcurrentOps: 8
+cacheSize: 100
+refreshInterval: 30s
+
+timeouts:
+  networkRequest: 60s
+  dotnetCLI: 120s
+  fileOperation: 10s
+
+# Dotnet CLI Integration
+dotnetPath: /usr/local/bin/dotnet
+dotnetVerbosity: detailed
+
+# Logging
 logLevel: debug
 logDir: /tmp/lazynuget/logs
+logFormat: json
 
-# UI preferences
-theme: default
-compactMode: false
-showHints: true
+logRotation:
+  maxSize: 20
+  maxAge: 60
+  maxBackups: 5
+  compress: false
 
-# Performance tuning
-startupTimeout: 5s
-shutdownTimeout: 3s
-maxConcurrentOps: 4
+# Hot-Reload
+hotReload: true
