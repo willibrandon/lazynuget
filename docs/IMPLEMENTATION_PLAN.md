@@ -1,11 +1,14 @@
 # LazyNuGet Complete Implementation Plan
 
-**Version**: 1.0
+**Version**: 1.1
 **Author**: willibrandon
-**Date**: 2025-11-02
+**Date**: 2025-11-03
 **Status**: Planning
+**Update**: Added gonuget library integration strategy (hybrid approach)
 
 This document provides the complete list of /speckit.specify commands required to implement a production-ready LazyNuGet from the ground up. Every feature from the proposal will be implemented - nothing is deferred to V2.
+
+**Key Change in v1.1**: Incorporates hybrid architecture combining gonuget library (for proven components like config parsing, version comparison, solution/project parsing) with dotnet CLI (for safety-critical operations like package installation, removal, and restoration). LazyNuGet requires **gonuget >= v0.1.0** as a Go module dependency.
 
 ---
 
@@ -16,6 +19,122 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 **Total Specifications**: 38
 **Estimated Timeline**: 24 weeks (full-time)
 **No Deferred Features**: Complete implementation of proposal
+
+### Prerequisites
+
+LazyNuGet has the following dependencies:
+
+1. **Go**: 1.24 or higher (language runtime)
+2. **dotnet CLI**: .NET SDK 9.0 or higher (for NuGet operations)
+3. **gonuget**: v0.1.0 or higher (Go library dependency for NuGet protocol components)
+   - Repository: https://github.com/willibrandon/gonuget
+   - Installation: `go get github.com/willibrandon/gonuget@v0.1.0`
+   - Used for: Config parsing, version comparison, solution/project parsing
+
+---
+
+## gonuget Library Integration Strategy
+
+LazyNuGet will use a **hybrid approach** combining gonuget library components with dotnet CLI execution for optimal safety and velocity.
+
+### Dependency Management
+
+LazyNuGet depends on **gonuget >= v0.1.0** as a standard Go module dependency:
+
+```go
+// go.mod
+require github.com/willibrandon/gonuget v0.1.0
+```
+
+**gonuget v0.1.0 Scope**: Includes production-ready, battle-tested components:
+- ✅ NuGet.Config parsing (hierarchical merging, source mappings, credentials)
+- ✅ Version parsing & comparison (<20ns/op, SemVer 2.0 compliant)
+- ✅ Solution parsing (.sln, .slnx, .slnf - refactored from CLI to library)
+- ✅ Project file parsing (.csproj SDK-style and legacy)
+- ✅ Data models (Package, Project, Dependency, Source types)
+- ✅ Framework compatibility (TFM parsing and comparison)
+
+**Future gonuget versions** will add more capabilities as they stabilize (search API v0.2.0+, dependency resolver v0.3.0+, package operations v0.4.0+).
+
+### Why Hybrid Instead of All-or-Nothing
+
+gonuget (github.com/willibrandon/gonuget) is a NuGet client library achieving protocol parity with the official .NET NuGet.Client. While certain components are battle-tested and production-ready (included in v0.1.0), other features remain in active development. The hybrid approach allows LazyNuGet to:
+
+1. **Leverage Production-Ready Components**: Use proven parts (config parsing, version comparison) immediately
+2. **Maintain Safety**: Keep critical operations (installation, restoration) with the official dotnet CLI
+3. **Avoid Duplication**: Don't rebuild what's already working in gonuget
+4. **Enable Dogfooding**: LazyNuGet becomes a real-world test bed for gonuget's stable components
+5. **Support Incremental Migration**: Replace dotnet CLI calls with gonuget as components mature
+
+### Integration Decision Matrix
+
+| Component | Strategy | Rationale |
+|-----------|----------|-----------|
+| **NuGet.Config Parsing** | ✅ **Use gonuget** | Production-ready, handles hierarchical config merging, package source mappings, credentials |
+| **Version Parsing & Comparison** | ✅ **Use gonuget** | Extremely fast (<20ns/op), handles SemVer 2.0, ranges, pre-release, wildcard, floating versions |
+| **Data Models** | ✅ **Use gonuget types** | Proven structures for Package, Dependency, Source, avoiding duplication |
+| **Solution/Project Parsing** | ✅ **Use gonuget** | Supports .sln, .slnx, .slnf, .csproj - already implemented |
+| **Package Search (Read-Only)** | 🔄 **Hybrid with fallback** | Use gonuget if V3 search API is solid, otherwise fall back to dotnet CLI |
+| **Package Metadata Fetching** | 🔄 **Hybrid with fallback** | Use gonuget for read-only metadata, fall back to dotnet CLI on errors |
+| **Package Installation** | ❌ **Use dotnet CLI** | Critical operation - let official tool handle file writes, csproj mutations, lock files |
+| **Package Removal** | ❌ **Use dotnet CLI** | Safety-critical - avoid breaking user builds |
+| **Package Restore** | ❌ **Use dotnet CLI** | Complex dependency resolution with multi-targeting - don't risk edge cases |
+| **Dependency Resolution (Display)** | ✅ **Use gonuget** | Read-only visualization of dependency trees is safe |
+
+### Implementation Guidelines
+
+1. **Add gonuget dependency**: `go get github.com/willibrandon/gonuget@v0.1.0`
+2. **Import gonuget packages**: `import "github.com/willibrandon/gonuget/core/config"` (and other packages)
+3. **Wrap gonuget APIs**: Create thin adapters in `internal/nuget/` that wrap gonuget calls
+4. **Add fallback mechanisms**: For hybrid operations, catch gonuget errors and fall back to dotnet CLI
+5. **Log strategy decisions**: Use debug logging to show when gonuget vs dotnet CLI is used
+6. **Version upgrades**: As gonuget releases v0.2.0+, evaluate migrating more operations from dotnet CLI
+
+### Example Integration Pattern
+
+```go
+// internal/nuget/config.go
+import "github.com/willibrandon/gonuget/core/config"
+
+func LoadNuGetConfig(path string) (*Config, error) {
+    // Use gonuget's proven config parser
+    cfg, err := config.Load(path)
+    if err != nil {
+        return nil, fmt.Errorf("loading nuget config: %w", err)
+    }
+    return adaptGonugetConfig(cfg), nil
+}
+
+// internal/nuget/operations.go
+func InstallPackage(ctx context.Context, project, packageID, version string) error {
+    // Use dotnet CLI for safety-critical operations
+    cmd := exec.CommandContext(ctx, "dotnet", "add", project, "package", packageID, "-v", version)
+    return cmd.Run()
+}
+
+// internal/nuget/search.go
+import "github.com/willibrandon/gonuget/core/protocol"
+
+func SearchPackages(ctx context.Context, query string) ([]Package, error) {
+    // Try gonuget first (if search API is stable)
+    results, err := protocol.Search(ctx, query)
+    if err != nil {
+        // Fallback to dotnet CLI
+        logger.Debug("gonuget search failed, falling back to dotnet CLI: %v", err)
+        return searchViaDotnetCLI(ctx, query)
+    }
+    return adaptGonugetResults(results), nil
+}
+```
+
+### Benefits of This Approach
+
+1. **Velocity**: No need to implement config parsing, version comparison, or solution parsing from scratch
+2. **Correctness**: gonuget's proven components ensure NuGet protocol compliance
+3. **Performance**: gonuget's optimizations (15-17x faster CLI, <20ns version parsing) improve UX
+4. **Safety**: Critical operations stay with official dotnet CLI, avoiding risk of breaking user builds
+5. **Evolution Path**: As gonuget components mature, replace dotnet CLI calls incrementally
+6. **Reduced Maintenance**: Less code to maintain in LazyNuGet, fewer NuGet protocol bugs
 
 ---
 
@@ -122,6 +241,8 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 
 ## Track 2: Domain Layer - dotnet CLI Integration (Specs 006-012)
 
+**Integration Note**: Track 2 establishes the foundational integration layer. While originally designed around pure dotnet CLI integration, many specs now leverage gonuget library components for production-ready functionality (config parsing, version handling, solution/project parsing). The dotnet CLI command builder and executor remain essential for safety-critical operations (install, remove, restore).
+
 ### Spec 006: dotnet CLI Command Builder
 
 ```bash
@@ -175,57 +296,73 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 
 ---
 
-### Spec 009: Project File (.csproj) Parser
+### Spec 009: Project and Solution File Parser
 
 ```bash
-/speckit.specify Implement XML parser for .csproj files that extracts PackageReference elements, target frameworks, project properties, and item groups. Support SDK-style and legacy project formats. Include writer functionality for adding/removing/updating PackageReferences with proper XML formatting and namespace handling.
+/speckit.specify Implement project and solution file parsing using gonuget's proven parsers that handle .csproj (SDK-style and legacy), .sln, .slnx (VS2022+), and .slnf (solution filters). Extract PackageReference elements, target frameworks, project properties, solution structure, and project relationships. For write operations, use dotnet CLI commands (dotnet sln add, dotnet add package) to avoid corrupting files.
 ```
 
+**Integration Strategy**: ✅ **Use gonuget for parsing** (read-only), ❌ **Use dotnet CLI for modifications**
+
 **Key Requirements**:
-- Parse SDK-style projects
-- Parse legacy project files
+- Parse SDK-style projects (gonuget)
+- Parse legacy project files (gonuget)
+- Parse .sln solutions (gonuget)
+- Parse .slnx solutions (gonuget)
+- Parse .slnf solution filters (gonuget)
 - Extract PackageReference elements
 - Extract TargetFramework(s)
 - Extract project properties
-- Write PackageReference additions
-- Write PackageReference updates/removals
-- Preserve XML formatting and comments
-- Handle XML namespaces
+- Extract solution project hierarchy
+- Modifications via dotnet CLI (safety)
+- Adapter layer for gonuget types
 
 ---
 
 ### Spec 010: NuGet.Config Parser
 
 ```bash
-/speckit.specify Create parser and manager for NuGet.Config files that reads package sources, credentials, disabled sources, fallback folders, and audit sources. Support hierarchical config merging (machine, user, repo) and include writer functionality for modifying sources. Handle encrypted credentials appropriately.
+/speckit.specify Integrate gonuget's production-ready NuGet.Config parser that handles package sources, credentials, disabled sources, fallback folders, package source mappings, and audit sources. Support hierarchical config merging (machine, user, repo-level) which gonuget already implements. For write operations (add/remove sources, enable/disable), use gonuget's config writer or dotnet CLI depending on maturity. Handle encrypted credentials appropriately.
 ```
 
+**Integration Strategy**: ✅ **Use gonuget exclusively** (production-ready, battle-tested)
+
+**Why gonuget**: This is explicitly called out as rock-solid and production-ready. gonuget's config parser handles all NuGet.Config complexity including hierarchical merging, package source mappings, and credential handling.
+
 **Key Requirements**:
-- Parse packageSources section
-- Parse disabledPackageSources section
-- Parse packageSourceCredentials (warn on clear-text)
-- Parse fallbackPackageFolders
-- Parse auditSources
-- Hierarchical config resolution
-- Write source modifications
-- Validate config structure
+- Parse packageSources section (gonuget)
+- Parse disabledPackageSources section (gonuget)
+- Parse packageSourceCredentials (gonuget, warn on clear-text)
+- Parse packageSourceMapping (gonuget)
+- Parse fallbackPackageFolders (gonuget)
+- Parse auditSources (gonuget)
+- Hierarchical config resolution (gonuget)
+- Write source modifications (gonuget or dotnet CLI)
+- Validate config structure (gonuget)
+- Adapter layer for gonuget config types
 
 ---
 
 ### Spec 011: Data Models (Package, Project, Dependency)
 
 ```bash
-/speckit.specify Define core data models for Package, Project, Dependency, Source, and Vulnerability entities. Include all attributes, relationships, validation rules, and serialization support. Models must support the full lifecycle from loading to display to modification, including transient state for UI operations.
+/speckit.specify Define core data models by wrapping or extending gonuget's proven types for Package, Project, Dependency, Source, and PackageReference. Add LazyNuGet-specific extensions for UI state (selection, display flags, transient state). Create adapter functions to convert between gonuget types and LazyNuGet UI models. Include validation rules, serialization support, and lifecycle management for UI operations.
 ```
 
+**Integration Strategy**: ✅ **Leverage gonuget types as foundation**, extend with UI-specific fields
+
+**Why gonuget**: Reusing gonuget's data models ensures NuGet protocol compatibility and avoids duplicating complex validation logic for version ranges, framework identifiers, etc.
+
 **Key Requirements**:
-- Package model (ID, version, metadata, vulnerabilities)
-- Project model (path, frameworks, references)
-- Dependency model (package, version range, transitive)
-- Source model (name, URL, enabled, credentials)
-- Vulnerability model (CVE, severity, advisory)
-- Model validation
+- Wrap gonuget Package types (ID, version, metadata)
+- Wrap gonuget Project types (path, frameworks, references)
+- Wrap gonuget Dependency types (version range, transitive)
+- Wrap gonuget Source types (name, URL, enabled)
+- Add UI-specific fields (selected, display state, icons)
+- Add Vulnerability model (CVE, severity, advisory) if not in gonuget
+- Model validation (leverage gonuget validators)
 - JSON serialization/deserialization
+- Adapter functions (gonuget ↔ LazyNuGet)
 - Equality and comparison methods
 
 ---
@@ -233,38 +370,50 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 ### Spec 012: Package and Project Loaders
 
 ```bash
-/speckit.specify Build loader components that fetch and construct Package and Project models from dotnet CLI output and file system. Support parallel loading, caching, incremental updates, and error handling. Loaders must enrich models with metadata from multiple sources (CLI output, NuGet.org, local cache).
+/speckit.specify Build loader components that fetch and construct Package and Project models using hybrid approach: gonuget parsers for file reading (.csproj, NuGet.Config), gonuget protocol clients for NuGet.org API metadata (if stable), and dotnet CLI output as fallback. Support parallel loading, caching (leverage gonuget's multi-tier cache), incremental updates, and error handling. Loaders must enrich models with metadata from multiple sources.
 ```
 
+**Integration Strategy**: 🔄 **Hybrid** - gonuget for file parsing, gonuget/dotnet CLI for API calls depending on stability
+
 **Key Requirements**:
-- Load projects from .csproj files
-- Load packages from `dotnet list package`
-- Load package metadata from NuGet.org API
-- Load vulnerability data
+- Load projects from .csproj files (gonuget parser)
+- Load solutions from .sln/.slnx/.slnf files (gonuget parser)
+- Load packages from `dotnet list package` (parse JSON output)
+- Load package metadata from NuGet.org API (try gonuget, fallback to dotnet CLI)
+- Load vulnerability data (dotnet CLI or NuGet API)
 - Parallel loading for performance
-- Caching with TTL
+- Caching with TTL (leverage gonuget's cache if available)
 - Incremental updates
 - Error handling and partial results
+- Fallback strategy logging
 
 ---
 
 ## Track 3: Domain Layer - Operations (Specs 013-018)
 
+**Integration Note**: Track 3 implements package operations. Version comparison (Spec 013) uses gonuget exclusively for performance and correctness. All write operations (add, remove, update, restore) use dotnet CLI for safety. Cache management uses dotnet CLI since it's primarily a file system operation.
+
 ### Spec 013: Version Comparison and Resolution
 
 ```bash
-/speckit.specify Implement NuGet-compliant version comparison, range parsing, and version resolution logic. Support semantic versioning, pre-release versions, version ranges ([1.0,2.0)), wildcard versions, and floating versions. Include utilities for determining if updates are major, minor, or patch level.
+/speckit.specify Integrate gonuget's high-performance version parsing and comparison library that handles NuGet-compliant semantic versioning, pre-release versions, version ranges ([1.0,2.0)), wildcard versions (1.0.*), and floating versions (1.0.0-*). Use gonuget's version utilities for determining update severity (major/minor/patch). This is a performance-critical component (target: <20ns/op for parsing, <10ns/op for comparison).
 ```
 
+**Integration Strategy**: ✅ **Use gonuget exclusively** (<20ns/op performance, battle-tested)
+
+**Why gonuget**: Version parsing and comparison is extremely performance-critical (executed for every package in every comparison operation). gonuget's implementation is <20ns/op for parsing and handles all NuGet version semantics correctly. This is faster than .NET's own implementation.
+
 **Key Requirements**:
-- Parse NuGet version strings
-- Compare versions (>, <, ==)
-- Parse version ranges
-- Check version satisfies range
-- Determine update severity (major/minor/patch)
-- Handle pre-release versions
-- Handle wildcard versions
-- Handle floating versions
+- Parse NuGet version strings (gonuget, <20ns/op)
+- Compare versions (>, <, ==) (gonuget, <10ns/op)
+- Parse version ranges (gonuget)
+- Check version satisfies range (gonuget)
+- Determine update severity (major/minor/patch) (gonuget or build on top)
+- Handle pre-release versions (gonuget)
+- Handle wildcard versions (1.0.*) (gonuget)
+- Handle floating versions (1.0.0-*) (gonuget)
+- Adapter layer for gonuget version types
+- Performance benchmarks to verify <20ns/op target
 
 ---
 
@@ -289,19 +438,24 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 ### Spec 015: Package Add Operation
 
 ```bash
-/speckit.specify Implement the add package operation that adds a PackageReference to a project file and optionally runs restore. Support version specification, framework-specific references, pre-release packages, and source selection. Include validation, conflict detection, backup/rollback, and user confirmation for large dependency trees.
+/speckit.specify Implement the add package operation using dotnet CLI (dotnet add package) for safety. Validate inputs using gonuget version parsing and project file parsing, but delegate the actual modification to dotnet CLI to ensure lock file consistency and avoid corrupting project files. Support version specification, framework-specific references, pre-release packages, and source selection. Include validation, conflict detection (using gonuget dependency resolver for display), backup/rollback, and user confirmation for large dependency trees.
 ```
 
+**Integration Strategy**: ❌ **Use dotnet CLI for writes**, ✅ **Use gonuget for validation/display**
+
+**Why dotnet CLI**: Package installation is safety-critical. The official tool handles csproj mutations, lock file updates, and transitive dependency resolution correctly. We validate and display using gonuget, but execute via dotnet CLI.
+
 **Key Requirements**:
-- Add PackageReference to .csproj
-- Specify version (latest, specific, range)
-- Framework-specific addition
-- Pre-release package support
-- Source specification
-- Validate package exists
-- Check for conflicts
+- Execute via `dotnet add package` (CLI)
+- Validate version using gonuget version parser
+- Validate package exists (gonuget API or CLI)
+- Check for conflicts (gonuget dependency resolver for preview)
+- Preview dependency tree (gonuget)
+- Framework-specific addition (CLI)
+- Pre-release package support (CLI)
+- Source specification (CLI)
 - Backup project file
-- Optional auto-restore
+- Optional auto-restore (CLI)
 - Rollback on failure
 
 ---
@@ -309,17 +463,19 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 ### Spec 016: Package Remove Operation
 
 ```bash
-/speckit.specify Implement the remove package operation that removes a PackageReference from a project file with safety checks. Warn about dependent packages, check for breaking changes, provide preview of what will be removed, and include backup/rollback. Support force removal and cascade removal of unused transitive dependencies.
+/speckit.specify Implement the remove package operation using dotnet CLI (dotnet remove package) for safety. Use gonuget dependency resolver to detect reverse dependencies and warn about potential breaks. Provide preview of what will be removed using gonuget's dependency graph visualization. Include backup/rollback. Support force removal and cascade removal of unused transitive dependencies.
 ```
 
+**Integration Strategy**: ❌ **Use dotnet CLI for writes**, ✅ **Use gonuget for validation/display**
+
 **Key Requirements**:
-- Remove PackageReference from .csproj
-- Check for reverse dependencies
-- Warn about potential breaks
-- Preview removal impact
+- Execute via `dotnet remove package` (CLI)
+- Check for reverse dependencies (gonuget resolver)
+- Warn about potential breaks (gonuget analysis)
+- Preview removal impact (gonuget dependency graph)
 - Backup project file
-- Optional cascade removal
-- Force removal option
+- Optional cascade removal (CLI or gonuget-guided)
+- Force removal option (CLI)
 - Rollback on failure
 
 ---
@@ -327,39 +483,46 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 ### Spec 017: Package Update Operation
 
 ```bash
-/speckit.specify Create package update operation that updates PackageReference versions with intelligent defaulting. Support updating to latest stable, latest including pre-release, specific version, or within constraints (minor/patch only). Include conflict detection, breaking change warnings, and bulk update across multiple projects.
+/speckit.specify Create package update operation using dotnet CLI (dotnet add package with --version) for execution. Use gonuget for version comparison to determine latest stable/pre-release and update severity (major/minor/patch). Use gonuget dependency resolver to detect conflicts and warn about breaking changes. Support bulk update across multiple projects with coordinated version selection.
 ```
 
+**Integration Strategy**: ❌ **Use dotnet CLI for writes**, ✅ **Use gonuget for version logic and validation**
+
 **Key Requirements**:
-- Update to latest stable
-- Update to latest (including pre-release)
-- Update to specific version
-- Update within constraints (minor/patch)
-- Detect version conflicts
-- Warn about breaking changes (major versions)
-- Multi-project bulk update
-- Preview before updating
+- Execute via `dotnet add package --version` (CLI)
+- Determine latest stable (gonuget version comparison)
+- Determine latest pre-release (gonuget)
+- Update to specific version (CLI with gonuget validation)
+- Update within constraints (gonuget version satisfies)
+- Detect version conflicts (gonuget resolver)
+- Warn about breaking changes (gonuget version diff: major bump)
+- Multi-project bulk update (orchestrate CLI calls)
+- Preview before updating (gonuget analysis)
 - Backup and rollback
-- Update lock files
+- Update lock files (CLI handles automatically)
 
 ---
 
 ### Spec 018: Package Restore Operation
 
 ```bash
-/speckit.specify Implement package restore operation that runs `dotnet restore` with progress tracking and error handling. Support force restore, no-cache restore, source specification, and parallel restore for multiple projects. Include detailed error messages for common restore failures (network, authentication, missing packages).
+/speckit.specify Implement package restore operation using dotnet CLI (dotnet restore) exclusively. This is a complex operation involving dependency resolution, framework targeting, and lock file generation - best left to the official tool. Focus on progress tracking, error parsing, and user-friendly error messages for common failures (network issues, missing packages, authentication errors).
 ```
 
+**Integration Strategy**: ❌ **Use dotnet CLI exclusively** (too complex and critical for gonuget)
+
+**Why dotnet CLI**: Restore involves complex multi-targeting dependency resolution, lock file generation, and NuGet cache interaction. This is where edge cases live. Let the official tool handle it.
+
 **Key Requirements**:
-- Run `dotnet restore` for projects
-- Force restore option
-- No-cache restore
-- Source specification
-- Parallel restore for solutions
-- Progress tracking
-- Detailed error messages
+- Execute `dotnet restore` (CLI)
+- Force restore option (CLI --force)
+- No-cache restore (CLI --no-cache)
+- Source specification (CLI --source)
+- Parallel restore for solutions (orchestrate CLI calls)
+- Progress tracking (parse CLI output)
+- Detailed error messages (parse and enhance CLI errors)
 - Retry on transient failures
-- Parse and display restore errors
+- Detect common error patterns and suggest fixes
 
 ---
 
@@ -559,20 +722,26 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 ### Spec 029: Package Search Interface
 
 ```bash
-/speckit.specify Build package search interface with fuzzy search input and live results display. Support searching across configured sources, filtering by pre-release, sorting by relevance/downloads, preview of results, and installation from search. Include autocomplete, search history, and quick package details view without leaving search.
+/speckit.specify Build package search interface with hybrid search backend: try gonuget's V3 protocol search API first for performance (if stable), fall back to dotnet CLI (dotnet package search) on errors. Provide fuzzy search input and live results display. Support searching across configured sources, filtering by pre-release, sorting by relevance/downloads, preview of results, and installation from search. Include autocomplete (using gonuget's autocomplete API if available), search history, and quick package details view.
 ```
 
+**Integration Strategy**: 🔄 **Hybrid with fallback** - gonuget search API (fast) with dotnet CLI fallback (safe)
+
+**Why Hybrid**: Package search is read-only and performance-critical for UX. If gonuget's V3 search implementation is stable, use it for speed (15-17x faster). If it errors, fall back to dotnet CLI silently. Log which backend is used for debugging.
+
 **Key Requirements**:
-- Search input with autocomplete
+- Search backend: try gonuget, fallback to `dotnet package search` (CLI)
+- Search input with autocomplete (gonuget API or none)
 - Live results as you type
-- Fuzzy matching
-- Search across sources
-- Filter: include pre-release
-- Sort: relevance, downloads, name
-- Result preview
-- Quick install (enter)
-- Search history
+- Fuzzy matching (client-side)
+- Search across sources (gonuget multi-source or CLI)
+- Filter: include pre-release (gonuget or CLI --prerelease)
+- Sort: relevance, downloads, name (gonuget or parse CLI)
+- Result preview (gonuget metadata or CLI)
+- Quick install (enter) - delegates to Spec 015
+- Search history (local storage)
 - Cancel search (esc)
+- Log backend selection for debugging
 
 ---
 
@@ -679,40 +848,50 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 ### Spec 035: Dependency Graph Visualization
 
 ```bash
-/speckit.specify Implement interactive dependency graph visualization that displays package dependency trees with expand/collapse, highlighting of transitive dependencies, path finding (why is this package included), and conflict identification. Support multiple visualization modes (tree, graph), export to graphviz, and integration with 'dotnet nuget why' command.
+/speckit.specify Implement interactive dependency graph visualization using gonuget's dependency resolver for tree construction and conflict detection. Display package dependency trees with expand/collapse, highlighting of transitive dependencies, path finding (why is this package included), and conflict identification using gonuget's resolution engine. Support multiple visualization modes (tree, graph), export to graphviz, and integration with 'dotnet nuget why' command for validation.
 ```
 
+**Integration Strategy**: ✅ **Use gonuget dependency resolver** (read-only, safe visualization)
+
+**Why gonuget**: Dependency graph construction is read-only and gonuget's resolver provides structured data for visualization. Safer than parsing dotnet CLI text output. Validate results against 'dotnet nuget why' for correctness.
+
 **Key Requirements**:
-- Display dependency tree
-- Expand/collapse nodes
-- Highlight transitive dependencies
-- Show version constraints
-- Path finding (why package included)
-- Identify conflicts
-- Tree view mode
-- Graph view mode (if feasible)
-- Export to graphviz
-- Integration with 'dotnet nuget why'
+- Build dependency tree (gonuget resolver)
+- Display dependency tree (UI)
+- Expand/collapse nodes (UI state)
+- Highlight transitive dependencies (gonuget marks direct vs transitive)
+- Show version constraints (gonuget version ranges)
+- Path finding (gonuget resolver: why package included)
+- Identify conflicts (gonuget resolver)
+- Tree view mode (UI)
+- Graph view mode if feasible (UI)
+- Export to graphviz (format gonuget tree)
+- Cross-validate with 'dotnet nuget why' (CLI)
 
 ---
 
 ### Spec 036: Package Source Manager
 
 ```bash
-/speckit.specify Build package source manager that displays configured NuGet sources with enable/disable toggle, add/remove sources, test connectivity, and manage credentials. Support source priority ordering, package source mapping, and warning for insecure sources (HTTP). Include import/export of source configurations.
+/speckit.specify Build package source manager using gonuget's NuGet.Config parser (Spec 010) for reading sources, and gonuget's config writer (if stable) or dotnet CLI for modifications. Display configured NuGet sources with enable/disable toggle, add/remove sources, test connectivity (gonuget protocol test or CLI), and manage credentials. Support source priority ordering, package source mapping, and warning for insecure sources (HTTP). Include import/export of source configurations.
 ```
 
+**Integration Strategy**: ✅ **Use gonuget for reading**, 🔄 **Hybrid for writing** (gonuget writer if stable, else CLI)
+
+**Why gonuget**: Source management is built on NuGet.Config which gonuget parses perfectly (Spec 010). For modifications, use gonuget's writer if it preserves formatting, otherwise use dotnet CLI to be safe.
+
 **Key Requirements**:
-- List configured sources
-- Enable/disable sources
-- Add new source (URL, name)
-- Remove source
-- Edit source
-- Test source connectivity
-- Manage credentials (warn on clear-text)
-- Source priority ordering
-- Package source mapping
-- Import/export sources
+- List configured sources (gonuget config parser)
+- Parse package source mappings (gonuget)
+- Enable/disable sources (gonuget writer or CLI)
+- Add new source (gonuget writer or CLI)
+- Remove source (gonuget writer or CLI)
+- Edit source (gonuget writer or CLI)
+- Test source connectivity (gonuget protocol test or ping)
+- Manage credentials (warn on clear-text) (gonuget)
+- Source priority ordering (gonuget or manual reorder + write)
+- Import/export sources (gonuget read + write)
+- Warn about HTTP sources (check URL scheme)
 
 ---
 
@@ -745,11 +924,11 @@ The implementation is organized into 7 major tracks with 38 distinct specificati
 **Key Requirements**:
 
 **Conflict Resolver**:
-- Detect version conflicts
-- Explain conflict cause
-- Suggest resolutions
-- Apply resolution
-- Preview impact
+- Detect version conflicts (gonuget dependency resolver)
+- Explain conflict cause (gonuget constraint analysis)
+- Suggest resolutions (gonuget resolution strategies)
+- Apply resolution (dotnet CLI for actual package updates)
+- Preview impact (gonuget dependency tree diff)
 
 **License Auditor**:
 - Scan package licenses
@@ -856,7 +1035,12 @@ Implementation is complete when:
 - **Production Ready**: Each spec includes production-quality requirements
 - **Testable**: Each spec is independently testable
 - **Cross-Platform**: All specs include cross-platform requirements
-- **Constitutional Compliance**: All specs align with the 7 core principles
+- **Constitutional Compliance**: All specs align with the 8 core principles (including Principle VIII: Complete Implementation - No Deferrals)
+- **gonuget Dependency**: Requires gonuget >= v0.1.0 as a standard Go module dependency
+- **Hybrid Architecture**: Combines gonuget library (v0.1.0: config, versions, parsing) with dotnet CLI (safety-critical: install, remove, restore) for optimal velocity and safety
+- **gonuget Dogfooding**: LazyNuGet serves as a real-world test bed for gonuget's stable components while maintaining safety through dotnet CLI for critical operations
+- **Incremental Migration**: As gonuget releases v0.2.0+ with additional stable components, dotnet CLI calls can be replaced incrementally without architectural changes
+- **Version Evolution Path**: v0.1.0 (parsing/config) → v0.2.0 (search) → v0.3.0 (dependency resolver) → v0.4.0+ (operations) → v1.0.0 (full client)
 
 ---
 
