@@ -1,3 +1,4 @@
+// Package lifecycle manages application lifecycle state transitions and graceful shutdown.
 package lifecycle
 
 import (

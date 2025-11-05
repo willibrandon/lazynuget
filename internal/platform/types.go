@@ -1,3 +1,4 @@
+// Package platform provides cross-platform abstractions for OS detection, terminal capabilities, path resolution, and process spawning.
 package platform
 
 // ColorDepth represents terminal color support level

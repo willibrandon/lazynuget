@@ -1,3 +1,4 @@
+// Package integration provides end-to-end tests for LazyNuGet application behavior.
 package integration
 
 import (
