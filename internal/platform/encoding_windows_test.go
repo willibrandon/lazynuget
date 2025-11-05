@@ -118,7 +118,7 @@ func TestDecodeBytes_Windows(t *testing.T) {
 			name:     "Invalid UTF-8 (fallback to replacement)",
 			input:    []byte{0xFF, 0xFE, 0x00, 0x00},
 			encoding: "utf-8",
-			want:     "\xff\xfe\x00\x00", // Go's string() conversion preserves bytes as-is
+			want:     "��\x00\x00", // Windows converts invalid UTF-8 to replacement chars
 		},
 		{
 			name:     "Empty input",
