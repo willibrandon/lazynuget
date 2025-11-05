@@ -94,7 +94,7 @@ func (p *pathResolver) Resolve(path string) (string, error) {
 	// Get config directory
 	configDir, err := p.ConfigDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to resolve relative path %q: %w", path, err)
 	}
 
 	// Join with config directory

@@ -3,6 +3,8 @@
 package platform
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -373,5 +375,70 @@ func TestResolve_Windows(t *testing.T) {
 				t.Errorf("Resolve(%q) = %q, should start with %q", tt.path, got, tt.shouldStart)
 			}
 		})
+	}
+}
+
+// TestEnvVarPrecedence_Windows tests that APPDATA takes precedence over XDG variables
+// This is important for WSL scenarios where XDG variables might be set
+// See: T102, FR-026
+func TestEnvVarPrecedence_Windows(t *testing.T) {
+	// Save original environment variables
+	origAPPDATA := os.Getenv("APPDATA")
+	origLOCALAPPDATA := os.Getenv("LOCALAPPDATA")
+	origXDGCONFIG := os.Getenv("XDG_CONFIG_HOME")
+	origXDGCACHE := os.Getenv("XDG_CACHE_HOME")
+
+	// Restore after test
+	defer func() {
+		os.Setenv("APPDATA", origAPPDATA)
+		os.Setenv("LOCALAPPDATA", origLOCALAPPDATA)
+		os.Setenv("XDG_CONFIG_HOME", origXDGCONFIG)
+		os.Setenv("XDG_CACHE_HOME", origXDGCACHE)
+	}()
+
+	// Set up test environment: Windows vars + XDG vars (simulating WSL)
+	os.Setenv("APPDATA", "C:\\Users\\Test\\AppData\\Roaming")
+	os.Setenv("LOCALAPPDATA", "C:\\Users\\Test\\AppData\\Local")
+	os.Setenv("XDG_CONFIG_HOME", "/home/user/.config")
+	os.Setenv("XDG_CACHE_HOME", "/home/user/.cache")
+
+	platformInfo, err := New()
+	if err != nil {
+		t.Fatalf("New() failed: %v", err)
+	}
+
+	pathResolver, err := NewPathResolver(platformInfo)
+	if err != nil {
+		t.Fatalf("NewPathResolver() failed: %v", err)
+	}
+
+	// Test ConfigDir: should use APPDATA, NOT XDG_CONFIG_HOME
+	configDir, err := pathResolver.ConfigDir()
+	if err != nil {
+		t.Fatalf("ConfigDir() failed: %v", err)
+	}
+
+	expectedConfigPrefix := "C:\\Users\\Test\\AppData\\Roaming"
+	if !strings.HasPrefix(configDir, expectedConfigPrefix) {
+		t.Errorf("ConfigDir() = %q, should start with %q (APPDATA), not XDG_CONFIG_HOME", configDir, expectedConfigPrefix)
+	}
+
+	if strings.Contains(configDir, "/home/user/.config") {
+		t.Errorf("ConfigDir() = %q incorrectly used XDG_CONFIG_HOME instead of APPDATA", configDir)
+	}
+
+	// Test CacheDir: should use LOCALAPPDATA, NOT XDG_CACHE_HOME
+	cacheDir, err := pathResolver.CacheDir()
+	if err != nil {
+		t.Fatalf("CacheDir() failed: %v", err)
+	}
+
+	expectedCachePrefix := "C:\\Users\\Test\\AppData\\Local"
+	if !strings.HasPrefix(cacheDir, expectedCachePrefix) {
+		t.Errorf("CacheDir() = %q, should start with %q (LOCALAPPDATA), not XDG_CACHE_HOME", cacheDir, expectedCachePrefix)
+	}
+
+	if strings.Contains(cacheDir, "/home/user/.cache") {
+		t.Errorf("CacheDir() = %q incorrectly used XDG_CACHE_HOME instead of LOCALAPPDATA", cacheDir)
 	}
 }

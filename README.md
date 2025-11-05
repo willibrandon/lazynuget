@@ -4,16 +4,26 @@ A modern terminal user interface (TUI) for NuGet package management, inspired by
 
 ## Features
 
+### Application Infrastructure
 - Cross-platform application bootstrap (Windows, macOS, Linux)
 - Graceful shutdown with SIGINT/SIGTERM handling
+- 5-layer panic recovery for stability
+- Non-interactive mode for CI/testing environments
+
+### Configuration Management
 - Configuration system with CLI > Env > File > Default precedence
 - Hot-reload configuration changes without restart
 - AES-256-GCM encryption for sensitive values
 - YAML and TOML configuration file support
 - Platform-specific configuration and keychain integration
-- Non-interactive mode for CI/testing environments
-- 5-layer panic recovery for stability
-- TTY detection and automatic mode switching
+
+### Platform Abstraction
+- **OS/Architecture Detection**: Automatic Windows, macOS, Linux detection
+- **Path Resolution**: Platform-appropriate config/cache directories with XDG/APPDATA support
+- **Terminal Capabilities**: Color depth detection (16/256/TrueColor), Unicode support, resize events
+- **Process Spawning**: Multi-platform text encoding (UTF-8, Windows-1252, Shift-JIS, etc.)
+- **TTY Detection**: Automatic interactive/non-interactive mode switching
+- **Performance**: <1ms path operations, <10ms terminal detection
 
 ## Requirements
 
@@ -59,13 +69,39 @@ make install
 ./lazynuget encrypt "my-secret-value"
 ```
 
+## Platform Support
+
+LazyNuGet provides native support for Windows, macOS, and Linux with platform-specific optimizations:
+
+### Directory Locations
+
+**Configuration Directory:**
+- **macOS**: `~/Library/Application Support/lazynuget/`
+- **Linux**: `~/.config/lazynuget/` (respects `XDG_CONFIG_HOME`)
+- **Windows**: `%APPDATA%\lazynuget\`
+
+**Cache Directory:**
+- **macOS**: `~/Library/Caches/lazynuget/`
+- **Linux**: `~/.cache/lazynuget/` (respects `XDG_CACHE_HOME`)
+- **Windows**: `%LOCALAPPDATA%\lazynuget\`
+
+### Terminal Support
+
+LazyNuGet automatically detects terminal capabilities:
+- **Color Depth**: Supports 16-color, 256-color, and TrueColor (24-bit) terminals
+- **Unicode Support**: Automatically falls back to ASCII if Unicode is not supported
+- **Resize Handling**: Responds to terminal resize events in real-time
+
+### Text Encoding
+
+Process output is correctly decoded on all platforms:
+- **Unix/macOS**: UTF-8 with locale detection (LC_ALL, LC_CTYPE, LANG)
+- **Windows**: Automatic detection of Windows-1252, UTF-8, and legacy code pages
+- **Other**: Support for Shift-JIS, EUC-JP, ISO-8859-1, and other encodings
+
 ## Configuration
 
-LazyNuGet supports YAML and TOML configuration files in platform-specific locations:
-
-- **macOS**: `~/Library/Application Support/lazynuget/config.yml` (or `.toml`)
-- **Linux**: `~/.config/lazynuget/config.yml` (or `.toml`)
-- **Windows**: `%APPDATA%\lazynuget\config.yml` (or `.toml`)
+LazyNuGet supports YAML and TOML configuration files. The default config file is `config.yml` (or `config.toml`) in the platform-specific configuration directory listed above.
 
 ### Example Configuration (YAML)
 

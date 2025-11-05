@@ -10,7 +10,10 @@ This guide shows how to use the platform abstraction layer for common tasks. All
 import "github.com/yourusername/lazynuget/internal/platform"
 
 func main() {
-    p := platform.New()
+    p, err := platform.New()
+    if err != nil {
+        log.Fatalf("Failed to detect platform: %v", err)
+    }
 
     if p.IsWindows() {
         // Windows-specific logic
@@ -27,10 +30,21 @@ func main() {
 ## Path Resolution
 
 ```go
-import "github.com/yourusername/lazynuget/internal/platform"
+import (
+    "path/filepath"
+    "github.com/yourusername/lazynuget/internal/platform"
+)
 
 func getConfigPath(filename string) (string, error) {
-    resolver := platform.NewPathResolver()
+    p, err := platform.New()
+    if err != nil {
+        return "", fmt.Errorf("platform detection failed: %w", err)
+    }
+
+    resolver, err := platform.NewPathResolver(p)
+    if err != nil {
+        return "", fmt.Errorf("failed to create path resolver: %w", err)
+    }
 
     // Get platform-appropriate config directory
     configDir, err := resolver.ConfigDir()
@@ -134,7 +148,16 @@ func TestNormalize(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            resolver := platform.NewPathResolver()
+            p, err := platform.New()
+            if err != nil {
+                t.Fatalf("Failed to create platform: %v", err)
+            }
+
+            resolver, err := platform.NewPathResolver(p)
+            if err != nil {
+                t.Fatalf("Failed to create path resolver: %v", err)
+            }
+
             got := resolver.Normalize(tt.input)
 
             want := tt.wantUnix
@@ -156,7 +179,16 @@ func TestNormalize(t *testing.T) {
 
 ```go
 func ensureCacheDir() error {
-    resolver := platform.NewPathResolver()
+    p, err := platform.New()
+    if err != nil {
+        return fmt.Errorf("platform detection failed: %w", err)
+    }
+
+    resolver, err := platform.NewPathResolver(p)
+    if err != nil {
+        return fmt.Errorf("failed to create path resolver: %w", err)
+    }
+
     cacheDir, err := resolver.CacheDir()
     if err != nil {
         return err
@@ -177,7 +209,10 @@ func ensureCacheDir() error {
 
 ```go
 func resolveConfigDir() (string, error) {
-    p := platform.New()
+    p, err := platform.New()
+    if err != nil {
+        return "", fmt.Errorf("platform detection failed: %w", err)
+    }
 
     if p.IsWindows() {
         // Windows: APPDATA always wins (even if XDG vars set in WSL)
