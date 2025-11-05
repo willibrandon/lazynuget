@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/willibrandon/lazynuget/internal/platform"
 )
 
 // validator provides validation for Config struct fields.
@@ -185,6 +187,32 @@ func (v *validator) validate(cfg *Config) []ValidationError {
 			DefaultUsed:  defaults.LogRotation.MaxBackups,
 		})
 		cfg.LogRotation.MaxBackups = defaults.LogRotation.MaxBackups // Apply fallback (T056)
+	}
+
+	// Validate and normalize paths (T052, T053)
+	if cfg.LogDir != "" {
+		// Get platform-specific path resolver
+		platformInfo, err := platform.New()
+		if err == nil {
+			pathResolver, err := platform.NewPathResolver(platformInfo)
+			if err == nil {
+				// Validate the path
+				if validateErr := pathResolver.Validate(cfg.LogDir); validateErr != nil {
+					errors = append(errors, ValidationError{
+						Key:          "logDir",
+						Value:        cfg.LogDir,
+						Constraint:   "must be a valid path for the current platform",
+						SuggestedFix: fmt.Sprintf("Path validation failed: %v", validateErr),
+						Severity:     "warning",
+						DefaultUsed:  defaults.LogDir,
+					})
+					cfg.LogDir = defaults.LogDir // Apply fallback (T056)
+				} else {
+					// Normalize the path (T053)
+					cfg.LogDir = pathResolver.Normalize(cfg.LogDir)
+				}
+			}
+		}
 	}
 
 	return errors

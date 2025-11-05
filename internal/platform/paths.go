@@ -71,28 +71,17 @@ func (p *pathResolver) CacheDir() (string, error) {
 
 // Normalize converts path to platform-native format
 func (p *pathResolver) Normalize(path string) string {
-	// Use filepath.Clean to normalize path separators and remove redundancies
-	return filepath.Clean(path)
+	return normalize(path)
 }
 
 // Validate checks if path format is valid for current platform
 func (p *pathResolver) Validate(path string) error {
-	// Basic validation: path cannot be empty
-	if path == "" {
-		return &PathError{
-			Op:   "Validate",
-			Path: path,
-			Err:  "path cannot be empty",
-		}
-	}
-
-	// More detailed validation will be added in Phase 4 (User Story 2)
-	return nil
+	return validate(path)
 }
 
 // IsAbsolute returns true if path is absolute for current platform
 func (p *pathResolver) IsAbsolute(path string) bool {
-	return filepath.IsAbs(path)
+	return isAbsolute(path)
 }
 
 // Resolve makes relative path absolute relative to config directory

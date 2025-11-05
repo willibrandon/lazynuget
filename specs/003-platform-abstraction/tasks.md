@@ -100,40 +100,40 @@
 
 ### Tests for User Story 2
 
-- [ ] T036 [P] [US2] Unit test for Windows drive letter normalization in internal/platform/paths_windows_test.go
-- [ ] T037 [P] [US2] Unit test for Windows UNC path handling in internal/platform/paths_windows_test.go
-- [ ] T038 [P] [US2] Unit test for Unix absolute/relative path handling in internal/platform/paths_unix_test.go
-- [ ] T039 [P] [US2] Unit test for path validation in internal/platform/paths_test.go
-- [ ] T040 [P] [US2] Integration test for mixed separators in tests/integration/paths_test.go
+- [X] T036 [P] [US2] Unit test for Windows drive letter normalization in internal/platform/paths_windows_test.go
+- [X] T037 [P] [US2] Unit test for Windows UNC path handling in internal/platform/paths_windows_test.go
+- [X] T038 [P] [US2] Unit test for Unix absolute/relative path handling in internal/platform/paths_unix_test.go
+- [X] T039 [P] [US2] Unit test for path validation in internal/platform/paths_test.go
+- [X] T040 [P] [US2] Integration test for mixed separators in tests/integration/paths_test.go
 
 ### Implementation for User Story 2
 
 **Windows Path Handling**:
 
-- [ ] T041 [P] [US2] Implement drive letter normalization in internal/platform/paths_windows.go
-- [ ] T042 [P] [US2] Implement UNC path detection and handling in internal/platform/paths_windows.go
-- [ ] T043 [P] [US2] Implement long path support (>260 chars) in internal/platform/paths_windows.go
-- [ ] T044 [US2] Implement Normalize() for Windows in internal/platform/paths_windows.go
+- [X] T041 [P] [US2] Implement drive letter normalization in internal/platform/paths_windows.go
+- [X] T042 [P] [US2] Implement UNC path detection and handling in internal/platform/paths_windows.go
+- [X] T043 [P] [US2] Implement long path support (>260 chars) in internal/platform/paths_windows.go
+- [X] T044 [US2] Implement Normalize() for Windows in internal/platform/paths_windows.go
 
 **Unix Path Handling**:
 
-- [ ] T045 [P] [US2] Implement absolute path detection in internal/platform/paths_unix.go
-- [ ] T046 [P] [US2] Implement relative path resolution in internal/platform/paths_unix.go
-- [ ] T047 [US2] Implement Normalize() for Unix in internal/platform/paths_unix.go
+- [X] T045 [P] [US2] Implement absolute path detection in internal/platform/paths_unix.go
+- [X] T046 [P] [US2] Implement relative path resolution in internal/platform/paths_unix.go
+- [X] T047 [US2] Implement Normalize() for Unix in internal/platform/paths_unix.go
 
 **Path Validation**:
 
-- [ ] T048 [US2] Implement Validate() with platform-specific rules in internal/platform/paths.go
-- [ ] T049 [US2] Implement IsAbsolute() with platform detection in internal/platform/paths.go
-- [ ] T050 [US2] Implement Resolve() for relative-to-config paths in internal/platform/paths.go
-- [ ] T051 [US2] Add descriptive error messages for invalid paths per FR-021
+- [X] T048 [US2] Implement Validate() with platform-specific rules in internal/platform/paths.go
+- [X] T049 [US2] Implement IsAbsolute() with platform detection in internal/platform/paths.go
+- [X] T050 [US2] Implement Resolve() for relative-to-config paths in internal/platform/paths.go
+- [X] T051 [US2] Add descriptive error messages for invalid paths per FR-021
 
 **Integration**:
 
-- [ ] T052 [US2] Update internal/config/config.go to call Validate() on all user-provided paths
-- [ ] T053 [US2] Update internal/config/config.go to call Normalize() before storing paths
-- [ ] T054 [US2] Add integration test for custom config path via CLI flag in tests/integration/config_test.go
-- [ ] T055 [US2] Add integration test for custom config path via env var in tests/integration/config_test.go
+- [X] T052 [US2] Update internal/config/config.go to call Validate() on all user-provided paths
+- [X] T053 [US2] Update internal/config/config.go to call Normalize() before storing paths
+- [X] T054 [US2] Add integration test for custom config path via CLI flag in tests/integration/config_test.go
+- [X] T055 [US2] Add integration test for custom config path via env var in tests/integration/config_test.go
 
 **Checkpoint**: User Story 2 complete - Users can specify platform-native paths with full validation
 
