@@ -18,7 +18,7 @@ import (
 type App struct {
 	startTime    time.Time
 	configLoader config.ConfigLoader
-	platform     platform.Platform
+	platform     platform.PlatformInfo
 	gui          any
 	ctx          context.Context
 	watcher      config.ConfigWatcher
@@ -121,7 +121,14 @@ func (app *App) Bootstrap(flags *Flags) error {
 
 	// Phase: Platform detection
 	app.phase = "platform"
-	app.platform = platform.New()
+	platformInfo, err := platform.New()
+	if err != nil {
+		if setErr := app.lifecycle.SetState(lifecycle.StateFailed); setErr != nil {
+			return fmt.Errorf("platform detection failed: %w (state transition error: %w)", err, setErr)
+		}
+		return fmt.Errorf("platform detection failed: %w", err)
+	}
+	app.platform = platformInfo
 
 	// Phase: Determine run mode (interactive vs non-interactive)
 	app.phase = "runmode"
@@ -236,7 +243,7 @@ func (app *App) GetLogger() logging.Logger {
 }
 
 // GetPlatform returns the platform utilities.
-func (app *App) GetPlatform() platform.Platform {
+func (app *App) GetPlatform() platform.PlatformInfo {
 	return app.platform
 }
 

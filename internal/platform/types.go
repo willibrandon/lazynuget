@@ -1,19 +1,47 @@
 package platform
 
-// RunMode defines whether the application runs in interactive or non-interactive mode.
+// ColorDepth represents terminal color support level
+type ColorDepth int
+
+const (
+	ColorNone        ColorDepth = 0        // No color support
+	ColorBasic16     ColorDepth = 16       // 16 ANSI colors
+	ColorExtended256 ColorDepth = 256      // 256-color palette
+	ColorTrueColor   ColorDepth = 16777216 // 24-bit true color
+)
+
+// String returns human-readable color depth description
+func (c ColorDepth) String() string {
+	switch c {
+	case ColorNone:
+		return "none"
+	case ColorBasic16:
+		return "16-color"
+	case ColorExtended256:
+		return "256-color"
+	case ColorTrueColor:
+		return "true-color"
+	default:
+		return "unknown"
+	}
+}
+
+// ProcessResult contains the output and exit status of a process
+type ProcessResult struct {
+	Stdout   string // Standard output (decoded to UTF-8)
+	Stderr   string // Standard error (decoded to UTF-8)
+	ExitCode int    // Process exit code (0 = success)
+}
+
+// RunMode represents whether the application is running interactively or not
 type RunMode int
 
 const (
-	// RunModeInteractive indicates the application should run with a full TUI.
-	// This is the default mode when connected to a terminal.
-	RunModeInteractive RunMode = iota
-
-	// RunModeNonInteractive indicates the application should run without a TUI.
-	// Used in CI environments, piped contexts, or when explicitly requested.
-	RunModeNonInteractive
+	RunModeInteractive    RunMode = iota // Interactive mode (TTY available)
+	RunModeNonInteractive                // Non-interactive mode (no TTY, CI, etc.)
 )
 
-// String returns the string representation of the run mode.
+// String returns human-readable run mode description
 func (r RunMode) String() string {
 	switch r {
 	case RunModeInteractive:
@@ -25,7 +53,7 @@ func (r RunMode) String() string {
 	}
 }
 
-// IsInteractive returns true if the run mode is interactive.
+// IsInteractive returns true if running in interactive mode
 func (r RunMode) IsInteractive() bool {
 	return r == RunModeInteractive
 }

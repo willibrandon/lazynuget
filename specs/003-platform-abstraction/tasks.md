@@ -17,12 +17,12 @@
 
 **Purpose**: Project initialization and platform abstraction structure
 
-- [ ] T001 Create internal/platform/ directory structure per plan.md
-- [ ] T002 Define PlatformInfo interface in internal/platform/platform.go
-- [ ] T003 Define PathResolver interface in internal/platform/paths.go
-- [ ] T004 Define TerminalCapabilities interface in internal/platform/terminal.go
-- [ ] T005 Define ProcessSpawner interface in internal/platform/process.go
-- [ ] T006 Define shared types (ColorDepth, ProcessResult) in internal/platform/types.go
+- [X] T001 Create internal/platform/ directory structure per plan.md
+- [X] T002 Define PlatformInfo interface in internal/platform/platform.go
+- [X] T003 Define PathResolver interface in internal/platform/paths.go
+- [X] T004 Define TerminalCapabilities interface in internal/platform/terminal.go
+- [X] T005 Define ProcessSpawner interface in internal/platform/process.go
+- [X] T006 Define shared types (ColorDepth, ProcessResult) in internal/platform/types.go
 
 ---
 
@@ -32,12 +32,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T007 Implement PlatformInfo detection (OS, Arch, Version) in internal/platform/detect.go
-- [ ] T008 Add build tag for Windows-specific code: internal/platform/detect_windows.go
-- [ ] T009 [P] Add build tag for Unix-specific code: internal/platform/detect_unix.go
-- [ ] T010 Create factory function platform.New() in internal/platform/factory.go
-- [ ] T011 [P] Add unit tests for platform detection in internal/platform/detect_test.go
-- [ ] T012 Update internal/bootstrap/app.go to use platform.New() instead of existing detection
+- [X] T007 Implement PlatformInfo detection (OS, Arch, Version) in internal/platform/detect.go
+- [X] T008 Add build tag for Windows-specific code: internal/platform/detect_windows.go
+- [X] T009 [P] Add build tag for Unix-specific code: internal/platform/detect_unix.go
+- [X] T010 Create factory function platform.New() in internal/platform/factory.go
+- [X] T011 [P] Add unit tests for platform detection in internal/platform/detect_test.go
+- [X] T012 Update internal/bootstrap/app.go to use platform.New() instead of existing detection
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

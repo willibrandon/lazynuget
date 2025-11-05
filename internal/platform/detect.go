@@ -1,189 +1,75 @@
-// Package platform provides platform detection and system utilities.
 package platform
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"runtime"
-	"slices"
-	"strings"
 )
 
-// Platform provides platform-specific information and utilities.
-type Platform interface {
-	// OS returns the operating system name
-	OS() string
-
-	// Arch returns the architecture
-	Arch() string
+// platformInfo implements the PlatformInfo interface
+type platformInfo struct {
+	os      string
+	arch    string
+	version string
 }
 
-// platformImpl implements the Platform interface.
-type platformImpl struct {
-	os   string
-	arch string
-}
-
-func (p *platformImpl) OS() string {
+// OS returns the operating system: "windows", "darwin", or "linux"
+func (p *platformInfo) OS() string {
 	return p.os
 }
 
-func (p *platformImpl) Arch() string {
+// Arch returns the architecture: "amd64" or "arm64"
+func (p *platformInfo) Arch() string {
 	return p.arch
 }
 
-// New creates a new Platform instance.
-// For now, this is a stub that returns basic runtime information.
-func New() Platform {
-	return &platformImpl{
-		os:   runtime.GOOS,
-		arch: runtime.GOARCH,
-	}
+// Version returns OS version string for diagnostics
+func (p *platformInfo) Version() string {
+	return p.version
 }
 
-// PlatformInfo contains detected platform and environment information.
-type PlatformInfo struct {
-	// OS is the operating system (linux, darwin, windows, etc.)
-	OS string
-
-	// Arch is the architecture (amd64, arm64, etc.)
-	Arch string
-
-	// IsCI indicates if running in a CI environment
-	IsCI bool
-
-	// IsDumbTerminal indicates if TERM=dumb is set
-	IsDumbTerminal bool
-
-	// NoColor indicates if NO_COLOR environment variable is set
-	NoColor bool
+// IsWindows returns true if running on Windows
+func (p *platformInfo) IsWindows() bool {
+	return p.os == "windows"
 }
 
-// Detect gathers platform and environment information.
-func Detect() *PlatformInfo {
-	return &PlatformInfo{
-		OS:             runtime.GOOS,
-		Arch:           runtime.GOARCH,
-		IsCI:           detectCI(),
-		IsDumbTerminal: isDumbTerminal(),
-		NoColor:        isNoColor(),
-	}
+// IsDarwin returns true if running on macOS
+func (p *platformInfo) IsDarwin() bool {
+	return p.os == "darwin"
 }
 
-// detectCI checks if we're running in a CI environment.
-// Checks common CI environment variables used by GitHub Actions, GitLab CI,
-// Travis CI, CircleCI, Jenkins, and others.
-func detectCI() bool {
-	ciEnvVars := []string{
-		"CI", // Generic CI indicator
-		"CONTINUOUS_INTEGRATION",
-		"BUILD_NUMBER", // Jenkins
-		"GITLAB_CI",
-		"TRAVIS",
-		"CIRCLECI",
-		"GITHUB_ACTIONS",
-		"TF_BUILD", // Azure Pipelines
-	}
-
-	for _, envVar := range ciEnvVars {
-		value := os.Getenv(envVar)
-		if value == "true" || value == "1" || value == "yes" {
-			return true
-		}
-	}
-
-	return false
+// IsLinux returns true if running on Linux
+func (p *platformInfo) IsLinux() bool {
+	return p.os == "linux"
 }
 
-// isDumbTerminal checks if TERM is set to "dumb".
-// Dumb terminals don't support TUI features like cursor movement or colors.
-func isDumbTerminal() bool {
-	term := os.Getenv("TERM")
-	return strings.ToLower(term) == "dumb"
-}
+// detectPlatform creates a new platformInfo with detected OS and architecture
+func detectPlatform() (*platformInfo, error) {
+	os := runtime.GOOS
+	arch := runtime.GOARCH
 
-// isNoColor checks if the NO_COLOR environment variable is set.
-// See https://no-color.org/ for the standard.
-func isNoColor() bool {
-	_, exists := os.LookupEnv("NO_COLOR")
-	return exists
-}
-
-// DetermineRunMode determines if the application should run in interactive or non-interactive mode.
-// It checks the following in priority order:
-//  1. Explicit --non-interactive flag
-//  2. CI environment detection
-//  3. TTY detection (stdin and stdout must both be terminals)
-//  4. Dumb terminal detection (TERM=dumb)
-//
-// Returns RunModeInteractive only if all conditions allow it, otherwise RunModeNonInteractive.
-func DetermineRunMode(nonInteractiveFlag bool) RunMode {
-	// Explicit flag takes highest priority
-	if nonInteractiveFlag {
-		return RunModeNonInteractive
+	// Validate supported platforms
+	switch os {
+	case "windows", "darwin", "linux":
+		// Supported
+	default:
+		return nil, fmt.Errorf("unsupported operating system: %s (supported: windows, darwin, linux)", os)
 	}
 
-	platform := Detect()
-
-	// CI environment implies non-interactive
-	if platform.IsCI {
-		return RunModeNonInteractive
+	// Validate supported architectures
+	switch arch {
+	case "amd64", "arm64":
+		// Supported
+	default:
+		return nil, fmt.Errorf("unsupported architecture: %s (supported: amd64, arm64)", arch)
 	}
 
-	// Dumb terminals can't support TUI
-	if platform.IsDumbTerminal {
-		return RunModeNonInteractive
+	p := &platformInfo{
+		os:   os,
+		arch: arch,
 	}
 
-	// Check if we have a real TTY (both stdin and stdout must be terminals)
-	if !IsTTY() {
-		return RunModeNonInteractive
-	}
+	// Detect OS version (platform-specific)
+	p.version = detectOSVersion()
 
-	// All checks passed - we can run interactively
-	return RunModeInteractive
-}
-
-// ValidateDotnetCLI checks if the dotnet CLI is available and functional.
-// Returns nil if dotnet is found and working, otherwise returns an error with
-// installation instructions.
-func ValidateDotnetCLI() error {
-	// Try to find dotnet in PATH
-	dotnetPath, err := exec.LookPath("dotnet")
-	if err != nil {
-		return fmt.Errorf("dotnet CLI not found in PATH\n\n" +
-			"LazyNuGet requires the .NET SDK to manage NuGet packages.\n\n" +
-			"Installation instructions:\n" +
-			"  • Windows: https://dotnet.microsoft.com/download\n" +
-			"  • macOS: brew install dotnet-sdk\n" +
-			"  • Linux: https://docs.microsoft.com/dotnet/core/install/linux")
-	}
-
-	// Validate that the found executable is actually named dotnet (security check)
-	expectedNames := []string{"dotnet", "dotnet.exe"}
-	baseName := strings.ToLower(dotnetPath[strings.LastIndex(dotnetPath, string(os.PathSeparator))+1:])
-	if !slices.Contains(expectedNames, baseName) {
-		return fmt.Errorf("found executable %s does not appear to be dotnet CLI\n"+
-			"Expected 'dotnet' or 'dotnet.exe', but found: %s", dotnetPath, baseName)
-	}
-
-	// Verify dotnet works by running --version
-	// Use "dotnet" directly (not the full path) since we've validated it exists in PATH
-	cmd := exec.Command("dotnet", "--version")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("dotnet CLI found at %s but failed to execute: %w\n"+
-			"Output: %s\n\n"+
-			"Try reinstalling the .NET SDK", dotnetPath, err, string(output))
-	}
-
-	version := strings.TrimSpace(string(output))
-	if version == "" {
-		return fmt.Errorf("dotnet CLI found but returned empty version\n" +
-			"Try reinstalling the .NET SDK")
-	}
-
-	// Successfully validated
-	return nil
+	return p, nil
 }
