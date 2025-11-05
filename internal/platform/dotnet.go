@@ -20,6 +20,7 @@ func ValidateDotnetCLI() error {
 	}
 
 	// Verify dotnet works by running --version
+	// #nosec G204 - dotnetPath comes from exec.LookPath which validates it's a real executable in PATH
 	cmd := exec.Command(dotnetPath, "--version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {

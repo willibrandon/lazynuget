@@ -19,6 +19,7 @@ type App struct {
 	startTime    time.Time
 	configLoader config.ConfigLoader
 	platform     platform.PlatformInfo
+	pathResolver platform.PathResolver
 	gui          any
 	ctx          context.Context
 	watcher      config.ConfigWatcher
@@ -129,6 +130,34 @@ func (app *App) Bootstrap(flags *Flags) error {
 		return fmt.Errorf("platform detection failed: %w", err)
 	}
 	app.platform = platformInfo
+
+	// Log detected platform information
+	app.logger.Debug("Platform detected: OS=%s, Arch=%s, Version=%s",
+		platformInfo.OS(), platformInfo.Arch(), platformInfo.Version())
+
+	// Create path resolver for platform-specific path operations
+	pathResolver, err := platform.NewPathResolver(platformInfo)
+	if err != nil {
+		if setErr := app.lifecycle.SetState(lifecycle.StateFailed); setErr != nil {
+			return fmt.Errorf("path resolver creation failed: %w (state transition error: %w)", err, setErr)
+		}
+		return fmt.Errorf("path resolver creation failed: %w", err)
+	}
+	app.pathResolver = pathResolver
+
+	// Log platform paths
+	configDir, configErr := pathResolver.ConfigDir()
+	cacheDir, cacheErr := pathResolver.CacheDir()
+	if configErr == nil && cacheErr == nil {
+		app.logger.Debug("Platform paths: Config=%s, Cache=%s", configDir, cacheDir)
+	} else {
+		app.logger.Warn("Failed to retrieve platform paths: config=%v, cache=%v", configErr, cacheErr)
+	}
+
+	// Detect and log terminal capabilities
+	termCaps := platform.NewTerminalCapabilities()
+	app.logger.Debug("Terminal capabilities: ColorDepth=%s, Unicode=%v, TTY=%v",
+		termCaps.GetColorDepth(), termCaps.SupportsUnicode(), termCaps.IsTTY())
 
 	// Phase: Determine run mode (interactive vs non-interactive)
 	app.phase = "runmode"
@@ -245,6 +274,11 @@ func (app *App) GetLogger() logging.Logger {
 // GetPlatform returns the platform utilities.
 func (app *App) GetPlatform() platform.PlatformInfo {
 	return app.platform
+}
+
+// GetPathResolver returns the platform path resolver.
+func (app *App) GetPathResolver() platform.PathResolver {
+	return app.pathResolver
 }
 
 // GetRunMode returns the determined run mode.

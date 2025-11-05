@@ -53,40 +53,40 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T013 [P] [US1] Integration test for Windows config directory in tests/integration/platform_windows_test.go
-- [ ] T014 [P] [US1] Integration test for macOS config directory in tests/integration/platform_darwin_test.go
-- [ ] T015 [P] [US1] Integration test for Linux XDG config directory in tests/integration/platform_linux_test.go
-- [ ] T016 [P] [US1] Unit test for ConfigDir() in internal/platform/paths_test.go
-- [ ] T017 [P] [US1] Unit test for CacheDir() in internal/platform/paths_test.go
+- [X] T013 [P] [US1] Integration test for Windows config directory in tests/integration/platform_windows_test.go
+- [X] T014 [P] [US1] Integration test for macOS config directory in tests/integration/platform_darwin_test.go
+- [X] T015 [P] [US1] Integration test for Linux XDG config directory in tests/integration/platform_linux_test.go
+- [X] T016 [P] [US1] Unit test for ConfigDir() in internal/platform/paths_test.go
+- [X] T017 [P] [US1] Unit test for CacheDir() in internal/platform/paths_test.go
 
 ### Implementation for User Story 1
 
 **Path Resolution**:
 
-- [ ] T018 [P] [US1] Implement Windows directory resolution in internal/platform/paths_windows.go
-- [ ] T019 [P] [US1] Implement macOS directory resolution in internal/platform/paths_darwin.go
-- [ ] T020 [P] [US1] Implement Linux XDG directory resolution in internal/platform/paths_linux.go
-- [ ] T021 [US1] Implement PathResolver factory in internal/platform/paths.go
-- [ ] T022 [US1] Add directory creation with permissions in internal/platform/paths.go (EnsureDir)
-- [ ] T023 [US1] Add parent validation and fallback logic per FR-025
+- [X] T018 [P] [US1] Implement Windows directory resolution in internal/platform/paths_windows.go
+- [X] T019 [P] [US1] Implement macOS directory resolution in internal/platform/paths_darwin.go
+- [X] T020 [P] [US1] Implement Linux XDG directory resolution in internal/platform/paths_linux.go
+- [X] T021 [US1] Implement PathResolver factory in internal/platform/paths.go
+- [X] T022 [US1] Add directory creation with permissions in internal/platform/paths.go (EnsureDir)
+- [X] T023 [US1] Add parent validation and fallback logic per FR-025
 
 **Terminal Capabilities**:
 
-- [ ] T024 [P] [US1] Implement color depth detection in internal/platform/terminal.go (detectColorLevel)
-- [ ] T025 [P] [US1] Implement Unicode support detection in internal/platform/terminal.go (detectUnicodeSupport)
-- [ ] T026 [P] [US1] Implement terminal size detection in internal/platform/terminal.go (GetSize)
-- [ ] T027 [P] [US1] Implement TTY detection in internal/platform/terminal.go (IsTTY)
-- [ ] T028 [US1] Create TerminalCapabilities factory in internal/platform/terminal.go
-- [ ] T029 [P] [US1] Add unit tests for color detection in internal/platform/terminal_test.go
-- [ ] T030 [P] [US1] Add unit tests for Unicode detection in internal/platform/terminal_test.go
+- [X] T024 [P] [US1] Implement color depth detection in internal/platform/terminal.go (detectColorLevel)
+- [X] T025 [P] [US1] Implement Unicode support detection in internal/platform/terminal.go (detectUnicodeSupport)
+- [X] T026 [P] [US1] Implement terminal size detection in internal/platform/terminal.go (GetSize)
+- [X] T027 [P] [US1] Implement TTY detection in internal/platform/terminal.go (IsTTY)
+- [X] T028 [US1] Create TerminalCapabilities factory in internal/platform/terminal.go
+- [X] T029 [P] [US1] Add unit tests for color detection in internal/platform/terminal_test.go
+- [X] T030 [P] [US1] Add unit tests for Unicode detection in internal/platform/terminal_test.go
 
 **Integration**:
 
-- [ ] T031 [US1] Update internal/config/config.go to use PathResolver.ConfigDir()
-- [ ] T032 [US1] Update internal/bootstrap/app.go to cache PathResolver instance
-- [ ] T033 [US1] Update internal/platform/detect.go to use TerminalCapabilities.IsTTY()
-- [ ] T034 [US1] Add logging for detected capabilities at startup
-- [ ] T035 [US1] Verify integration test passes on all platforms in CI
+- [X] T031 [US1] Update internal/config/config.go to use PathResolver.ConfigDir()
+- [X] T032 [US1] Update internal/bootstrap/app.go to cache PathResolver instance
+- [X] T033 [US1] Update internal/platform/detect.go to use TerminalCapabilities.IsTTY()
+- [X] T034 [US1] Add logging for detected capabilities at startup
+- [X] T035 [US1] Verify integration test passes on all platforms in CI
 
 **Checkpoint**: User Story 1 fully functional - LazyNuGet starts correctly with platform-appropriate defaults on Windows/macOS/Linux
 

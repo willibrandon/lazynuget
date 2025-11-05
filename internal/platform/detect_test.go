@@ -76,14 +76,14 @@ func TestNew(t *testing.T) {
 
 func TestColorDepthString(t *testing.T) {
 	tests := []struct {
-		depth ColorDepth
 		want  string
+		depth ColorDepth
 	}{
-		{ColorNone, "none"},
-		{ColorBasic16, "16-color"},
-		{ColorExtended256, "256-color"},
-		{ColorTrueColor, "true-color"},
-		{ColorDepth(999), "unknown"},
+		{"none", ColorNone},
+		{"16-color", ColorBasic16},
+		{"256-color", ColorExtended256},
+		{"true-color", ColorTrueColor},
+		{"unknown", ColorDepth(999)},
 	}
 
 	for _, tt := range tests {

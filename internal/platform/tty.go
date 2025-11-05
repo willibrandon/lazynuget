@@ -69,14 +69,14 @@ func DetermineRunMode(nonInteractiveFlag bool) RunMode {
 // Travis CI, CircleCI, Jenkins, and others.
 func detectCI() bool {
 	ciEnvVars := []string{
-		"CI",                      // Generic CI indicator
-		"CONTINUOUS_INTEGRATION",  // Generic CI indicator
-		"BUILD_NUMBER",            // Jenkins
-		"GITLAB_CI",               // GitLab CI
-		"TRAVIS",                  // Travis CI
-		"CIRCLECI",                // CircleCI
-		"GITHUB_ACTIONS",          // GitHub Actions
-		"TF_BUILD",                // Azure Pipelines
+		"CI",                     // Generic CI indicator
+		"CONTINUOUS_INTEGRATION", // Generic CI indicator
+		"BUILD_NUMBER",           // Jenkins
+		"GITLAB_CI",              // GitLab CI
+		"TRAVIS",                 // Travis CI
+		"CIRCLECI",               // CircleCI
+		"GITHUB_ACTIONS",         // GitHub Actions
+		"TF_BUILD",               // Azure Pipelines
 	}
 
 	for _, envVar := range ciEnvVars {

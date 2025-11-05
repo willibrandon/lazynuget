@@ -1,56 +1,42 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-	"runtime"
+	"github.com/willibrandon/lazynuget/internal/platform"
 )
 
-// getPlatformConfigPath returns the platform-specific default configuration directory.
-// See: FR-006
+// getPlatformConfigPath returns the platform-specific default configuration directory
+// using the platform abstraction layer.
+// See: FR-006, specs/003-platform-abstraction
 //
 // Returns:
 //   - macOS: ~/Library/Application Support/lazynuget/
-//   - Linux: ~/.config/lazynuget/
+//   - Linux: $XDG_CONFIG_HOME/lazynuget/ or ~/.config/lazynuget/
 //   - Windows: %APPDATA%\lazynuget\
 //
-// If the user's home directory cannot be determined, returns an empty string.
+// If platform detection or path resolution fails, returns an empty string.
+// Caller should handle this by using explicit --config flag or failing gracefully.
 func getPlatformConfigPath() string {
-	switch runtime.GOOS {
-	case "darwin": // macOS
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		return filepath.Join(home, "Library", "Application Support", "lazynuget")
-
-	case "linux":
-		// Follow XDG Base Directory Specification
-		// First check XDG_CONFIG_HOME, fall back to ~/.config
-		if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
-			return filepath.Join(xdgConfigHome, "lazynuget")
-		}
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		return filepath.Join(home, ".config", "lazynuget")
-
-	case "windows":
-		// Use %APPDATA% environment variable
-		if appData := os.Getenv("APPDATA"); appData != "" {
-			return filepath.Join(appData, "lazynuget")
-		}
-		// Fallback: try user profile + AppData\Roaming
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		return filepath.Join(home, "AppData", "Roaming", "lazynuget")
-
-	default:
-		// Unknown platform - return empty string
-		// Caller should handle this by using current directory or explicit --config flag
+	// Get platform info singleton
+	platformInfo, err := platform.New()
+	if err != nil {
+		// Platform detection failed - return empty string
+		// Caller will handle by checking for explicit --config flag
 		return ""
 	}
+
+	// Create path resolver
+	pathResolver, err := platform.NewPathResolver(platformInfo)
+	if err != nil {
+		// Path resolver creation failed - return empty string
+		return ""
+	}
+
+	// Get config directory
+	configDir, err := pathResolver.ConfigDir()
+	if err != nil {
+		// Config directory resolution failed - return empty string
+		return ""
+	}
+
+	return configDir
 }
