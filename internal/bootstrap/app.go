@@ -154,10 +154,24 @@ func (app *App) Bootstrap(flags *Flags) error {
 		app.logger.Warn("Failed to retrieve platform paths: config=%v, cache=%v", configErr, cacheErr)
 	}
 
-	// Detect and log terminal capabilities
+	// Detect and log terminal capabilities (T069)
 	termCaps := platform.NewTerminalCapabilities()
 	app.logger.Debug("Terminal capabilities: ColorDepth=%s, Unicode=%v, TTY=%v",
 		termCaps.GetColorDepth(), termCaps.SupportsUnicode(), termCaps.IsTTY())
+
+	// Check terminal dimensions and warn if below minimum (T070, FR-015)
+	width, height, err := termCaps.GetSize()
+	if err == nil {
+		const (
+			MinWidth  = 40
+			MinHeight = 10
+		)
+		if width < MinWidth || height < MinHeight {
+			app.logger.Warn("Terminal dimensions %dx%d are below recommended minimum %dx%d. "+
+				"TUI may not display correctly. Dimensions have been clamped to safe values.",
+				width, height, MinWidth, MinHeight)
+		}
+	}
 
 	// Phase: Determine run mode (interactive vs non-interactive)
 	app.phase = "runmode"

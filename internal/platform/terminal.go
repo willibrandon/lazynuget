@@ -52,12 +52,38 @@ func (t *terminalCapabilities) SupportsUnicode() bool {
 }
 
 // GetSize returns terminal dimensions (width, height in characters)
+// Validates and clamps dimensions to safe ranges:
+// - Minimum: 40x10 (below this, TUI is unusable)
+// - Maximum: 500x200 (prevents buffer overflow issues)
+// See: T063, T064, FR-015
 func (t *terminalCapabilities) GetSize() (width, height int, err error) {
 	// Try to get size from stdout
 	width, height, err = term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		// Fall back to default size if detection fails
 		return 80, 24, fmt.Errorf("failed to get terminal size: %w (using defaults)", err)
+	}
+
+	// Validate and clamp dimensions (T063, T064)
+	const (
+		MinWidth  = 40
+		MinHeight = 10
+		MaxWidth  = 500
+		MaxHeight = 200
+	)
+
+	// Clamp width to valid range
+	if width < MinWidth {
+		width = MinWidth
+	} else if width > MaxWidth {
+		width = MaxWidth
+	}
+
+	// Clamp height to valid range
+	if height < MinHeight {
+		height = MinHeight
+	} else if height > MaxHeight {
+		height = MaxHeight
 	}
 
 	return width, height, nil
@@ -69,13 +95,13 @@ func (t *terminalCapabilities) IsTTY() bool {
 }
 
 // WatchResize registers a callback for terminal resize events
-// Note: This is a stub implementation. Full resize watching requires platform-specific code
-// and signal handling, which will be implemented in a future phase if needed.
-func (t *terminalCapabilities) WatchResize(_ func(width, height int)) (stop func()) {
-	// For now, return a no-op stop function
-	// Full implementation would involve SIGWINCH signal handling on Unix
-	// and similar mechanisms on Windows
-	return func() {}
+// Platform-specific implementation:
+// - Unix: Uses SIGWINCH signal to detect resize events
+// - Windows: Polls terminal size every 500ms
+// Returns a stop function to unregister the watcher
+// See: T067, FR-016
+func (t *terminalCapabilities) WatchResize(callback func(width, height int)) (stop func()) {
+	return watchResize(callback)
 }
 
 // detectColorDepth detects terminal color support level

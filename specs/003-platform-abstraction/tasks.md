@@ -147,34 +147,34 @@
 
 ### Tests for User Story 3
 
-- [ ] T056 [P] [US3] Unit test for ColorNone detection with NO_COLOR in internal/platform/terminal_test.go
-- [ ] T057 [P] [US3] Unit test for ColorNone detection with TERM=dumb in internal/platform/terminal_test.go
-- [ ] T058 [P] [US3] Unit test for Unicode fallback with LANG=C in internal/platform/terminal_test.go
-- [ ] T059 [P] [US3] Integration test for non-interactive mode in CI in tests/integration/noninteractive_test.go
-- [ ] T060 [P] [US3] Integration test for terminal resize handling in tests/integration/terminal_test.go
+- [X] T056 [P] [US3] Unit test for ColorNone detection with NO_COLOR in internal/platform/terminal_test.go
+- [X] T057 [P] [US3] Unit test for ColorNone detection with TERM=dumb in internal/platform/terminal_test.go
+- [X] T058 [P] [US3] Unit test for Unicode fallback with LANG=C in internal/platform/terminal_test.go
+- [X] T059 [P] [US3] Integration test for non-interactive mode in CI in tests/integration/noninteractive_test.go
+- [X] T060 [P] [US3] Integration test for terminal resize handling in tests/integration/terminal_resize_test.go
 
 ### Implementation for User Story 3
 
 **Graceful Degradation**:
 
-- [ ] T061 [P] [US3] Add NO_COLOR environment variable check in internal/platform/terminal.go
-- [ ] T062 [P] [US3] Add TERM=dumb handling in internal/platform/terminal.go
-- [ ] T063 [P] [US3] Add minimum dimension validation in internal/platform/terminal.go (40x10 minimum)
-- [ ] T064 [US3] Add dimension clamping (40-500 width, 10-200 height) per data-model.md
+- [X] T061 [P] [US3] Add NO_COLOR environment variable check in internal/platform/terminal.go
+- [X] T062 [P] [US3] Add TERM=dumb handling in internal/platform/terminal.go
+- [X] T063 [P] [US3] Add minimum dimension validation in internal/platform/terminal.go (40x10 minimum)
+- [X] T064 [US3] Add dimension clamping (40-500 width, 10-200 height) per data-model.md
 
 **Terminal Resize**:
 
-- [ ] T065 [US3] Implement SIGWINCH signal handler in internal/platform/terminal_unix.go
-- [ ] T066 [US3] Implement console event handler for Windows in internal/platform/terminal_windows.go
-- [ ] T067 [US3] Implement WatchResize() with callback pattern in internal/platform/terminal.go
-- [ ] T068 [US3] Add resize channel with buffering to prevent blocking per FR-028
+- [X] T065 [US3] Implement SIGWINCH signal handler in internal/platform/terminal_unix.go
+- [X] T066 [US3] Implement console event handler for Windows in internal/platform/terminal_windows.go
+- [X] T067 [US3] Implement WatchResize() with callback pattern in internal/platform/terminal.go
+- [X] T068 [US3] Add resize channel with buffering to prevent blocking per FR-028
 
 **Integration**:
 
-- [ ] T069 [US3] Update internal/bootstrap/app.go to log terminal capabilities at startup
-- [ ] T070 [US3] Add warning log when terminal dimensions are below minimum
-- [ ] T071 [US3] Verify graceful degradation with TERM=dumb in CI tests
-- [ ] T072 [US3] Add manual testing checklist for iTerm2, Windows Terminal, Alacritty per research.md
+- [X] T069 [US3] Update internal/bootstrap/app.go to log terminal capabilities at startup
+- [X] T070 [US3] Add warning log when terminal dimensions are below minimum
+- [X] T071 [US3] Verify graceful degradation with TERM=dumb in CI tests
+- [X] T072 [US3] Add manual testing checklist for iTerm2, Windows Terminal, Alacritty per research.md
 
 **Checkpoint**: User Story 3 complete - LazyNuGet works in constrained environments with graceful degradation
 

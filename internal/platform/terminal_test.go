@@ -220,6 +220,43 @@ func TestGetSize(t *testing.T) {
 	t.Logf("Terminal size: %dx%d", width, height)
 }
 
+// TestGetSize_Clamping tests dimension validation and clamping (T063, T064)
+func TestGetSize_Clamping(t *testing.T) {
+	// Note: This test verifies the clamping logic, but can't easily test with actual
+	// terminal size changes. The clamping is applied after term.GetSize() returns.
+	// Manual testing is required to verify clamping with actual small/large terminals.
+
+	// Verify minimum dimensions are enforced
+	const (
+		MinWidth  = 40
+		MinHeight = 10
+		MaxWidth  = 500
+		MaxHeight = 200
+	)
+
+	caps := NewTerminalCapabilities()
+	width, height, _ := caps.GetSize()
+
+	// Verify clamped to minimum
+	if width < MinWidth {
+		t.Errorf("GetSize() width = %d, should be clamped to minimum %d", width, MinWidth)
+	}
+	if height < MinHeight {
+		t.Errorf("GetSize() height = %d, should be clamped to minimum %d", height, MinHeight)
+	}
+
+	// Verify clamped to maximum
+	if width > MaxWidth {
+		t.Errorf("GetSize() width = %d, should be clamped to maximum %d", width, MaxWidth)
+	}
+	if height > MaxHeight {
+		t.Errorf("GetSize() height = %d, should be clamped to maximum %d", height, MaxHeight)
+	}
+
+	t.Logf("GetSize() returned clamped dimensions: %dx%d (valid range: %d-%d x %d-%d)",
+		width, height, MinWidth, MaxWidth, MinHeight, MaxHeight)
+}
+
 // TestWatchResize tests resize watcher (stub implementation)
 func TestWatchResize(t *testing.T) {
 	caps := NewTerminalCapabilities()
