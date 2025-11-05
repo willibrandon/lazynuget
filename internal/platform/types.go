@@ -26,13 +26,6 @@ func (c ColorDepth) String() string {
 	}
 }
 
-// ProcessResult contains the output and exit status of a process
-type ProcessResult struct {
-	Stdout   string // Standard output (decoded to UTF-8)
-	Stderr   string // Standard error (decoded to UTF-8)
-	ExitCode int    // Process exit code (0 = success)
-}
-
 // RunMode represents whether the application is running interactively or not
 type RunMode int
 
