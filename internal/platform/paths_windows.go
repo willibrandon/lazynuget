@@ -100,6 +100,23 @@ func validate(path string) error {
 		}
 	}
 
+	// Reject Unix absolute paths (starting with / but no drive letter)
+	// Valid Windows paths: C:\, \\server\share, relative\path
+	// Invalid on Windows: /usr/local/bin
+	if len(path) > 0 && (path[0] == '/' || path[0] == '\\') {
+		// Allow UNC paths (\\server\share)
+		if len(path) >= 2 && path[0] == '\\' && path[1] == '\\' {
+			// This is a UNC path, continue validation
+		} else {
+			// Rooted path without drive letter - invalid on Windows
+			return &PathError{
+				Op:   "Validate",
+				Path: path,
+				Err:  "rooted path without drive letter not valid on Windows",
+			}
+		}
+	}
+
 	// Check for invalid characters in Windows paths
 	// Invalid characters: < > : " | ? *
 	// Note: We allow : for drive letters (C:) but not elsewhere
