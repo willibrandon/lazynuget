@@ -43,6 +43,23 @@ func getCacheDir() (string, error) {
 // - Removes redundant separators
 // - Resolves . and .. segments
 func normalize(path string) string {
+	// Handle UNC paths before filepath.Clean to avoid issues with redundant separators
+	// UNC paths start with \\ or //
+	isUNC := (len(path) >= 2 && path[0] == '\\' && path[1] == '\\') ||
+		(len(path) >= 2 && path[0] == '/' && path[1] == '/')
+
+	if isUNC {
+		// Strip leading separators and clean manually for UNC paths
+		// to properly handle cases like \\\\server\\share
+		trimmed := strings.TrimLeft(path, "\\/")
+		// Convert forward slashes to backslashes
+		trimmed = strings.ReplaceAll(trimmed, "/", "\\")
+		// Use filepath.Clean on the trimmed path
+		cleaned := filepath.Clean(trimmed)
+		// Add back the UNC prefix
+		return "\\\\" + cleaned
+	}
+
 	// First use filepath.Clean to handle . and .. and normalize separators
 	cleaned := filepath.Clean(path)
 
@@ -50,19 +67,6 @@ func normalize(path string) string {
 	if len(cleaned) >= 2 && cleaned[1] == ':' {
 		// Uppercase the drive letter
 		cleaned = strings.ToUpper(cleaned[0:1]) + cleaned[1:]
-	}
-
-	// Check if this is a UNC path (e.g., "\\server\share" or "//server/share")
-	if len(cleaned) >= 2 && cleaned[0] == '\\' && cleaned[1] == '\\' {
-		// UNC path - ensure it starts with exactly \\ (filepath.Clean might have changed it)
-		// Find the end of the UNC prefix (after \\server\share)
-		parts := strings.Split(cleaned, "\\")
-		// parts[0] and parts[1] will be empty strings due to leading \\
-		// parts[2] is server name, parts[3] is share name
-		if len(parts) >= 4 {
-			// Reconstruct with normalized separators
-			cleaned = "\\\\" + strings.Join(parts[2:], "\\")
-		}
 	}
 
 	return cleaned
