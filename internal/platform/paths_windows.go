@@ -1,0 +1,201 @@
+//go:build windows
+
+package platform
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"unicode"
+)
+
+// getConfigDir returns the Windows config directory: %APPDATA%\lazynuget
+func getConfigDir() (string, error) {
+	appData := os.Getenv("APPDATA")
+	if appData == "" {
+		return "", &PathError{
+			Op:   "ConfigDir",
+			Path: "%APPDATA%",
+			Err:  "APPDATA environment variable not set",
+		}
+	}
+
+	return filepath.Join(appData, "lazynuget"), nil
+}
+
+// getCacheDir returns the Windows cache directory: %LOCALAPPDATA%\lazynuget
+func getCacheDir() (string, error) {
+	localAppData := os.Getenv("LOCALAPPDATA")
+	if localAppData == "" {
+		return "", &PathError{
+			Op:   "CacheDir",
+			Path: "%LOCALAPPDATA%",
+			Err:  "LOCALAPPDATA environment variable not set",
+		}
+	}
+
+	return filepath.Join(localAppData, "lazynuget"), nil
+}
+
+// normalize converts path to Windows-native format:
+// - Converts forward slashes to backslashes
+// - Uppercases drive letters
+// - Removes redundant separators
+// - Resolves . and .. segments
+func normalize(path string) string {
+	// Handle UNC paths before filepath.Clean to avoid issues with redundant separators
+	// UNC paths start with \\ or //
+	isUNC := (len(path) >= 2 && path[0] == '\\' && path[1] == '\\') ||
+		(len(path) >= 2 && path[0] == '/' && path[1] == '/')
+
+	if isUNC {
+		// Strip leading separators and clean manually for UNC paths
+		// to properly handle cases like \\\\server\\share
+		trimmed := strings.TrimLeft(path, "\\/")
+		// Convert forward slashes to backslashes
+		trimmed = strings.ReplaceAll(trimmed, "/", "\\")
+		// Use filepath.Clean on the trimmed path
+		cleaned := filepath.Clean(trimmed)
+		// Add back the UNC prefix
+		return "\\\\" + cleaned
+	}
+
+	// First use filepath.Clean to handle . and .. and normalize separators
+	cleaned := filepath.Clean(path)
+
+	// Check if this is a drive letter path (e.g., "c:\..." or "C:\...")
+	if len(cleaned) >= 2 && cleaned[1] == ':' {
+		// Uppercase the drive letter
+		cleaned = strings.ToUpper(cleaned[0:1]) + cleaned[1:]
+	}
+
+	return cleaned
+}
+
+// isAbsolute returns true if the path is absolute on Windows:
+// - Starts with drive letter (e.g., "C:\")
+// - Starts with UNC path (e.g., "\\server\share")
+func isAbsolute(path string) bool {
+	// Use filepath.IsAbs which handles both drive letters and UNC paths
+	return filepath.IsAbs(path)
+}
+
+// validate checks if path is valid on Windows
+func validate(path string) error {
+	// Basic validation: path cannot be empty
+	if path == "" {
+		return &PathError{
+			Op:   "Validate",
+			Path: path,
+			Err:  "path cannot be empty",
+		}
+	}
+
+	// Check for null bytes (invalid in Windows paths)
+	if strings.ContainsRune(path, '\x00') {
+		return &PathError{
+			Op:   "Validate",
+			Path: path,
+			Err:  "path contains null byte",
+		}
+	}
+
+	// Reject Unix absolute paths (starting with / but no drive letter)
+	// Valid Windows paths: C:\, \\server\share, relative\path
+	// Invalid on Windows: /usr/local/bin
+	if len(path) > 0 && (path[0] == '/' || path[0] == '\\') {
+		// Allow UNC paths (\\server\share)
+		if len(path) >= 2 && path[0] == '\\' && path[1] == '\\' {
+			// This is a UNC path, continue validation
+		} else {
+			// Rooted path without drive letter - invalid on Windows
+			return &PathError{
+				Op:   "Validate",
+				Path: path,
+				Err:  "rooted path without drive letter not valid on Windows",
+			}
+		}
+	}
+
+	// Check for invalid characters in Windows paths
+	// Invalid characters: < > : " | ? *
+	// Note: We allow : for drive letters (C:) but not elsewhere
+	invalidChars := []rune{'<', '>', '"', '|', '?', '*'}
+	for _, ch := range invalidChars {
+		if strings.ContainsRune(path, ch) {
+			return &PathError{
+				Op:   "Validate",
+				Path: path,
+				Err:  "path contains invalid character: " + string(ch),
+			}
+		}
+	}
+
+	// Check for colon outside of drive letter position
+	colonIdx := strings.IndexRune(path, ':')
+	if colonIdx != -1 {
+		// Colon is only valid at position 1 for drive letters (e.g., "C:")
+		if colonIdx != 1 {
+			return &PathError{
+				Op:   "Validate",
+				Path: path,
+				Err:  "colon only allowed in drive letter position",
+			}
+		}
+		// Verify it's actually a drive letter (single letter before colon)
+		if !unicode.IsLetter(rune(path[0])) {
+			return &PathError{
+				Op:   "Validate",
+				Path: path,
+				Err:  "invalid drive letter",
+			}
+		}
+	}
+
+	// Check for reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+	// These can appear as full path components or with extensions
+	reservedNames := []string{
+		"CON", "PRN", "AUX", "NUL",
+		"COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+	}
+
+	// Split path into components
+	parts := strings.Split(filepath.Clean(path), string(filepath.Separator))
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		// Check if part is a reserved name (with or without extension)
+		baseName := part
+		if idx := strings.LastIndex(part, "."); idx != -1 {
+			baseName = part[:idx]
+		}
+
+		baseNameUpper := strings.ToUpper(baseName)
+		for _, reserved := range reservedNames {
+			if baseNameUpper == reserved {
+				return &PathError{
+					Op:   "Validate",
+					Path: path,
+					Err:  "path contains reserved device name: " + reserved,
+				}
+			}
+		}
+
+		// Check for paths ending with space or period (invalid on Windows)
+		if len(part) > 0 {
+			lastChar := part[len(part)-1]
+			if lastChar == ' ' || lastChar == '.' {
+				return &PathError{
+					Op:   "Validate",
+					Path: path,
+					Err:  "path component cannot end with space or period",
+				}
+			}
+		}
+	}
+
+	return nil
+}
